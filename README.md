@@ -10,12 +10,12 @@ git clone https://github.com/Tuan-Nguyen-Minhh/web-american-sign-language.git
 Cài môi trường ảo
 
 ```bash
-python -m venv venv
+python -m venv asl_env
 ```
 
 Kích hoạt môi trường ảo (cmd/vscode)
 ```bash
-venv\Scripts\activate
+asl_env\Scripts\activate
 ```
 
 Tải các libraries cần thiết
