@@ -1,0 +1,8 @@
+__pycache__
+asl_env
+
+*.h5
+
+# ignore env files
+.env
+*.env
