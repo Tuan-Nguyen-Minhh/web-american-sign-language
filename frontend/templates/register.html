@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Register — ASL App</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+            body {
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background: url("{{ url_for('static', path='background.jpg') }}");
+                animation: gradientBG 60s ease infinite;
+                overflow: hidden;
+            }
+            @keyframes gradientBG {
+                0% {background-position: 0% 50%;}
+                50% {background-position: 100% 50%;}
+                100% {background-position: 0% 50%;}
+            }
+            .glass-container {
+                position: relative;
+                width: 420px;
+                padding: 40px;
+                border-radius: 20px;
+                backdrop-filter: blur(15px);
+                background: rgba(255,255,255,0.1);
+                border: 1px solid rgba(255,255,255,0.4);
+                box-shadow: 0 25px 45px rgba(0,0,0,0.4);
+                z-index: 10;
+                overflow: hidden;
+            }
+            .glass-container::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: rgba(255,255,255,0.05);
+                transform:  skewX(-15deg);
+                transition: 0.5s;
+                pointer-events: none;
+            }
+            .glass-container:hover::before {
+                left: 120%;
+            }
+            .glass-container h2 {
+                color: #fff;
+                font-size: 28px;
+                font-weight: 600;
+                text-align: center;
+                letter-spacing: 1px;
+                margin-bottom: 30px;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+            .input-group {
+                position: relative;
+                margin-bottom: 25px;
+            }
+            .input-group input {
+                width: 100%;
+                padding: 15px 20px;
+                background: rgba(255,255,255,0.2);
+                border: none;
+                outline: none;
+                border-radius: 35px;
+                font-size: 16px;
+                color: #fff;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+                transition: all 0.3s ease;
+            }
+            .input-group input::placeholder {
+                color: rgba(255,255,255,0.7);
+            }
+            .input-group input:focus {
+                background: rgba(255,255,255,0.3);
+                box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            }
+
+            .input-group label {
+                position: absolute;
+                top: 50%;
+                left: 20px;
+                transform: translateY(-50%);
+                color: rgba(255,255,255,0.8);
+                font-size: 16px;
+                pointer-events: none;
+                transition: all 0.3s ease;
+            }
+            .input-group input:focus + label,
+            .input-group input:valid + label {
+                top: 0;
+                left: 15px;
+                font-size: 12px;
+                background: rgba(255,255,255,0.2);
+                padding: 2px 8px;
+                color: #fff;
+                border-radius: 10px;
+            }
+            .name-row {
+                display: flex;
+                gap: 15px;
+            }
+            .name-row .input-group {
+                flex: 1;
+            }
+            .terms-agreement {
+                display: flex;
+                align-items: center;
+                margin-bottom: 25px;
+                font-size: 14px;
+                color: rgba(255,255,255,0.8);
+            }
+            .terms-agreement input {
+                margin-right: 10px;
+                accent-color: #fff;
+            }
+            .terms-agreement a {
+                color: #fff;
+                text-decoration: none;
+                transition: all 0.3s ease;
+            }
+            .terms-agreement a:hover {
+                text-decoration: underline;
+            }
+            .register-btn {
+                width: 100%;
+                padding: 15px;
+                background: rgba(255,255,255,0.3);
+                border: none;
+                outline: none;
+                border-radius: 35px;
+                color: #fff;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            }
+            .register-btn:hover {
+                background: rgba(255,255,255,0.4);
+                transform: translateY(-3px);
+                box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            }
+            .register-btn:disabled {
+                background: rgba(255,255,255,0.1);
+                cursor: not-allowed;
+                transform: none;
+            }
+            .login-link {
+                text-align: center;
+                margin-top: 25px;
+                color: rgba(255,255,255,0.8);
+                font-size: 14px;
+            }
+            .login-link a {
+                color: #fff;
+                font-weight: 600;
+                text-decoration: none;
+                transition: all 0.3s ease;
+            }
+            .login-link a:hover {
+                text-decoration: underline;
+            }
+            .error-message {
+                color: #ff6b6b;
+                font-size: 12px;
+                margin-top: 5px;
+                display: none;
+            }
+            .input-group.error input {
+                border: 2px solid #ff6b6b;
+            }
+            
+            #alert-placeholder {
+                margin-bottom: 20px;
+            }
+            
+            .alert {
+                padding: 12px 18px;
+                border-radius: 25px;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.3);
+                box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+                font-size: 14px;
+                font-weight: 500;
+                text-align: center;
+                animation: slideInAlert 0.4s ease-out;
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .alert::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: rgba(255,255,255,0.1);
+                transform: skewX(-15deg);
+                transition: 0.5s;
+                pointer-events: none;
+            }
+            
+            .alert:hover::before {
+                left: 100%;
+            }
+            
+            .alert-success {
+                background: rgba(34, 197, 94, 0.25);
+                color: #ffffff;
+                border-color: rgba(34, 197, 94, 0.4);
+                text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            }
+            
+            .alert-danger {
+                background: rgba(239, 68, 68, 0.25);
+                color: #ffffff;
+                border-color: rgba(239, 68, 68, 0.4);
+                text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            }
+            
+            @keyframes slideInAlert {
+                from {
+                    opacity: 0;
+                    transform: translateY(-20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="glass-container">
+            <h2>Create Account</h2>
+
+            <div id="alert-placeholder"></div>
+
+            <form id="registerForm">
+                <div class="name-row">
+                    <div class="input-group">
+                        <input type="text" id="firstName" required>
+                        <label>First Name</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="lastName" required>
+                        <label>Last Name</label>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <input type="email" id="email" name="email" required>
+                    <label for="email">Email</label>
+                    <div class="error-message" id="emailError">Please enter a valid email address</div>
+                </div>
+                
+                <div class="input-group">
+                    <input type="text" id="username" name="username" required>
+                    <label for="username">Username</label>
+                    <div class="error-message" id="usernameError">Username must be at least 3 characters</div>
+                </div>
+                
+                <div class="input-group">
+                    <input type="password" id="password" name="password" required>
+                    <label for="password">Password</label>
+                    <div class="error-message" id="passwordError">Password must be at least 8 characters</div>
+                </div>
+                
+                <div class="input-group">
+                    <input type="password" id="confirmPassword" required>
+                    <label>Confirm Password</label>
+                    <div class="error-message" id="confirmPasswordError">Passwords do not match</div>
+                </div>
+
+                <div class="terms-agreement">
+                    <input type="checkbox" id="agreeTerms" required>
+                    <label for="agreeTerms">I agree to the <a href="#">Terms & Conditions</a></label>
+                </div>
+
+                <button type="submit" class="register-btn">Create Account</button>
+                
+                <div class="login-link">
+                    <p>Already have an account? <a href="/login">Login</a></p>
+                </div>
+            </form>
+        </div>
+
+        <script>
+            const form = document.getElementById('registerForm');
+            const alertPlaceholder = document.getElementById('alert-placeholder');
+            const registerBtn = document.querySelector('.register-btn');
+
+            function showAlert(message, type = 'danger') {
+                alertPlaceholder.innerHTML = `<div>${message}</div>`;
+            }
+
+            function resetErrors() {
+                document.querySelectorAll('.input-group').forEach(group => {
+                    group.classList.remove('error');
+                    const em = group.querySelector('.error-message');
+                    if (em) em.style.display = 'none';
+                });
+            }
+
+            function showError(inputId, errorId) {
+                const input = document.getElementById(inputId);
+                if (!input) return;
+                const inputGroup = input.parentElement;
+                if (inputGroup) inputGroup.classList.add('error');
+                const err = document.getElementById(errorId);
+                if (err) err.style.display = 'block';
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                alertPlaceholder.innerHTML = '';
+                resetErrors();
+
+                const firstName = (document.getElementById('firstName') || {}).value?.trim() || '';
+                const lastName = (document.getElementById('lastName') || {}).value?.trim() || '';
+                const email = (document.getElementById('email') || {}).value?.trim() || '';
+                const username = (document.getElementById('username') || {}).value?.trim() || '';
+                const password = (document.getElementById('password') || {}).value || '';
+                const confirmPassword = (document.getElementById('confirmPassword') || {}).value || '';
+                const agreeTerms = (document.getElementById('agreeTerms') || {}).checked || false;
+
+                let isValid = true;
+
+                // basic validations
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    showError('email', 'emailError');
+                    isValid = false;
+                }
+                if (username.length < 3) {
+                    showError('username', 'usernameError');
+                    isValid = false;
+                }
+                if (password !== confirmPassword) {
+                    showError('confirmPassword', 'confirmPasswordError');
+                    isValid = false;
+                }
+                if (!agreeTerms) {
+                    showAlert('You must agree to the Terms & Conditions', 'danger');
+                    isValid = false;
+                }
+
+                if (!isValid) return;
+
+                const payload = {
+                    email,
+                    username,
+                    password,
+                    name: `${firstName} ${lastName}`.trim()
+                };
+
+                // UI lock
+                registerBtn.textContent = 'Creating Account...';
+                registerBtn.disabled = true;
+
+                try {
+                    const res = await fetch('/user', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json().catch(() => ({}));
+
+                    if (res.ok) {
+                        showAlert('Registration successful — you can now sign in', 'success');
+                        setTimeout(() => window.location.href = '/login', 1200);
+                    } else {
+                        const msg = data.detail || data.message || JSON.stringify(data);
+                        showAlert('Register failed: ' + msg, 'danger');
+                        registerBtn.disabled = false;
+                        registerBtn.textContent = 'Create Account';
+                    }
+                } catch (err) {
+                    showAlert('Network error: ' + (err.message || err), 'danger');
+                    registerBtn.disabled = false;
+                    registerBtn.textContent = 'Create Account';
+                }
+            });
+
+            // real-time confirm password validation (non-blocking)
+            const confirmEl = document.getElementById('confirmPassword');
+            if (confirmEl) {
+                confirmEl.addEventListener('input', function () {
+                    const pwd = (document.getElementById('password') || {}).value || '';
+                    const em = document.getElementById('confirmPasswordError');
+                    const ig = this.parentElement;
+                    if (this.value && pwd !== this.value) {
+                        if (ig) ig.classList.add('error');
+                        if (em) em.style.display = 'block';
+                    } else {
+                        if (ig) ig.classList.remove('error');
+                        if (em) em.style.display = 'none';
+                    }
+                });
+            }
+        </script>
+    </body>
+</html>
