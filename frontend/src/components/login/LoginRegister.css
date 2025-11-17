@@ -175,3 +175,30 @@ form .register-link {
   text-decoration: underline;
   color: var(--text-accent);
 }
+
+.error-message {
+  background-color: #fee;
+  color: #c33;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid #fcc;
+}
+
+.success-message {
+  background-color: #efe;
+  color: #3c3;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid #cfc;
+}
+
+.form-box button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
