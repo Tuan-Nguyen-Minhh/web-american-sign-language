@@ -23,17 +23,6 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-// Public Route Component (redirects to home if already logged in)
-function PublicRoute({ children }) {
-  const isAuthenticated = authService.isAuthenticated();
-
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
-}
-
 function AppContent() {
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
@@ -71,15 +60,8 @@ function AppContent() {
             }
           />
 
-          {/* Public Route - Login (redirects to home if already logged in) */}
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <LoginRegister />
-              </PublicRoute>
-            }
-          />
+          {/* Public Route - Login (ALLOW ACCESS EVEN IF LOGGED IN) */}
+          <Route path="/login" element={<LoginRegister />} />
 
           {/* Catch-all route - redirect to home or login */}
           <Route

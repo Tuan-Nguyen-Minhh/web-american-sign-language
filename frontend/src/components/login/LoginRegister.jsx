@@ -1,12 +1,16 @@
 import React, { useState } from "react";
 import "./LoginRegister.css";
-import { FaUser, FaLock, FaEnvelope } from "react-icons/fa";
+import { FaUser, FaLock, FaEnvelope, FaHome } from "react-icons/fa";
 import { authService } from "../../services/authService";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginRegister() {
   const [action, setAction] = useState("");
   const navigate = useNavigate();
+
+  // Check if user is already logged in
+  const currentUser = authService.getUser();
+  const isLoggedIn = authService.isAuthenticated();
 
   // Login state
   const [loginData, setLoginData] = useState({
@@ -40,6 +44,11 @@ export default function LoginRegister() {
     setRegisterSuccess(false);
   };
 
+  // Handle return to home
+  const handleReturnHome = () => {
+    navigate("/");
+  };
+
   // Handle login form change
   const handleLoginChange = (e) => {
     setLoginData({
@@ -66,8 +75,8 @@ export default function LoginRegister() {
 
     try {
       await authService.login(loginData.username, loginData.password);
-      // Redirect to home or dashboard after successful login
-      navigate("/home");
+      // Redirect to home after successful login
+      navigate("/");
     } catch (error) {
       setLoginError(error.message || "Login failed. Please try again.");
     } finally {
@@ -111,11 +120,44 @@ export default function LoginRegister() {
 
   return (
     <div className="login-page">
+      {/* Return Home Button - Only show if user is logged in */}
+      {isLoggedIn && (
+        <div className="return-home-container">
+          <button
+            className="return-home-btn"
+            onClick={handleReturnHome}
+            title="Return to home page"
+          >
+            <FaHome className="home-icon" />
+            <span>Return to Home</span>
+          </button>
+          <div className="current-user-info">
+            Currently logged in as: <strong>{currentUser?.name}</strong>
+          </div>
+        </div>
+      )}
+
       <div className={`wrapper${action}`}>
         {/* LOGIN FORM */}
         <div className="form-box login">
           <form onSubmit={handleLoginSubmit}>
             <h1>Login</h1>
+
+            {isLoggedIn && (
+              <div className="info-message">
+                You are already logged in. Login with a different account or{" "}
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleReturnHome();
+                  }}
+                >
+                  return home
+                </a>
+                .
+              </div>
+            )}
 
             {loginError && <div className="error-message">{loginError}</div>}
 
@@ -154,7 +196,11 @@ export default function LoginRegister() {
             </div>
 
             <button type="submit" disabled={loginLoading}>
-              {loginLoading ? "Logging in..." : "Login"}
+              {loginLoading
+                ? "Logging in..."
+                : isLoggedIn
+                ? "Switch Account"
+                : "Login"}
             </button>
 
             <div className="register-link">

@@ -202,3 +202,121 @@ form .register-link {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.return-home-container {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+}
+
+.return-home-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.return-home-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.return-home-btn:active {
+  transform: translateY(0);
+}
+
+.home-icon {
+  font-size: 16px;
+}
+
+.current-user-info {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 8px 15px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #333;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.current-user-info strong {
+  color: #667eea;
+  font-weight: 600;
+}
+
+/* Info Message (for already logged in users) */
+.info-message {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid #bbdefb;
+  line-height: 1.5;
+}
+
+.info-message a {
+  color: #1565c0;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.info-message a:hover {
+  color: #0d47a1;
+}
+
+/* Error message styles (if not already present) */
+.error-message {
+  background-color: #fee;
+  color: #c33;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid #fcc;
+}
+
+/* Success message styles (if not already present) */
+.success-message {
+  background-color: #efe;
+  color: #3c3;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid #cfc;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .return-home-container {
+    top: 10px;
+    left: 10px;
+  }
+
+  .return-home-btn {
+    padding: 8px 15px;
+    font-size: 13px;
+  }
+
+  .current-user-info {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+}

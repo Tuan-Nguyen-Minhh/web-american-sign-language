@@ -19,7 +19,7 @@ export const authService = {
 
       const data = await response.json();
       
-      // Store token and user info
+      // Store token and user info (will replace existing if switching accounts)
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('user', JSON.stringify(data.user));
       
@@ -56,6 +56,16 @@ export const authService = {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
     window.location.href = '/login';
+  },
+
+  // Switch to a different account (same as login but more explicit)
+  async switchAccount(username, password) {
+    // First logout current user
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user');
+    
+    // Then login with new credentials
+    return await this.login(username, password);
   },
 
   getToken() {
