@@ -1,29 +1,46 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from . import models
 from .database import engine
 from .routers import blogs, users, authentication
-from .config import static_dir
+from .config import static_dir, assets_dir
 
-app = FastAPI()
+app = FastAPI(
+    title="ASL Web Application",
+    version="1.0.0"
+)
 
-# Mount static files
-app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
-models.Base.metadata.create_all(engine)
+# Create database tables
+models.Base.metadata.create_all(bind=engine)
 
-app.include_router(authentication.router, prefix="/api")
-app.include_router(blogs.router, prefix="/api")
-app.include_router(users.router, prefix="/api")
+app.include_router(authentication.router)
+app.include_router(blogs.router)
+app.include_router(users.router)
 
-# Catch-all route to serve React's index.html
+# FOR PRODUCTION
+if assets_dir.exists():
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+# Serve index.html for all non-API routes
 @app.get("/{full_path:path}")
-async def serve_react_app(full_path: str):
-    # Don't serve React for API routes
-    if full_path.startswith("api/"):
-        raise HTTPException(status_code=404, detail="API endpoint not found")
-    
-    # Serve React's index.html for all other routes (SPA routing)
-    react_index = static_dir / "index.html"
-    return FileResponse(str(react_index))
+async def serve_react(full_path: str):
+    file_path = static_dir / full_path
+    if file_path.is_file():
+        return FileResponse(file_path)
+    return FileResponse(static_dir / "index.html")
+
+# Health check
+@app.get("/api/health")
+async def health_check():
+    return {"status": "healthy", "version": "1.0.0"}

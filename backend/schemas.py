@@ -15,6 +15,7 @@ class User(BaseModel):
     password: str
 
 class ShowUser(BaseModel):
+    id: int
     name: str
     email: str
     blogs: List[Blog] = []
@@ -37,6 +38,9 @@ class Login(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    user: dict | None = None
 
 class TokenData(BaseModel):
     email: str | None = None
+    user_id: int | None = None
+    name: str | None = None
