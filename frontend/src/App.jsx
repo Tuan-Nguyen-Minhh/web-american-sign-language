@@ -7,12 +7,20 @@ import {
   Routes,
   Route,
   useLocation,
+  Navigate,
 } from "react-router-dom";
 import LoginRegister from "./components/login/LoginRegister";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function AppContent() {
   const location = useLocation();
+  const { isAuthenticated, loading } = useAuth();
   const isLoginPage = location.pathname === "/login";
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="App">
@@ -21,10 +29,28 @@ function AppContent() {
 
       <main>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<div>About Page</div>} />
-          <Route path="/contact" element={<div>Contact Page</div>} />
-          <Route path="/login" element={<LoginRegister />} />
+          <Route path="/login" element={
+            isAuthenticated ? <Navigate to="/" replace /> : <LoginRegister />
+          } />
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          } />
+          <Route path="/about" element={
+            <ProtectedRoute>
+              <div>About Page</div>
+            </ProtectedRoute>
+          } />
+          <Route path="/contact" element={
+            <ProtectedRoute>
+              <div>Contact Page</div>
+            </ProtectedRoute>
+          } />
+          {/* Redirect any unknown route to home if authenticated, login if not */}
+          <Route path="*" element={
+            isAuthenticated ? <Navigate to="/" replace /> : <Navigate to="/login" replace />
+          } />
         </Routes>
       </main>
 
@@ -36,9 +62,11 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </AuthProvider>
   );
 }
 

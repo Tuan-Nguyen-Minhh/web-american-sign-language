@@ -13,7 +13,7 @@ SECRET_KEY = SECRET_KEY
 ALGORITHM = ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/login")
 
 password_hash = PasswordHash.recommended()
 

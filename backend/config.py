@@ -1,5 +1,4 @@
 from pathlib import Path
-from fastapi.templating import Jinja2Templates
 import os
 from dotenv import load_dotenv
 
@@ -18,8 +17,5 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 base_dir = Path(__file__).resolve().parent.parent
 
 # Static files and templates directories
-static_dir = base_dir / "frontend" / "static"
+static_dir = base_dir / "frontend" / "dist"
 templates_dir = base_dir / "frontend" / "templates"
-
-# Khai báo templates
-templates = Jinja2Templates(directory=str(templates_dir))
