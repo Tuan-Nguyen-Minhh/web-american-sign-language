@@ -3,84 +3,189 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { authAPI } from "../../services/api";
 import "./LoginRegister.css";
-import { FaUser } from "react-icons/fa";
-import { FaLock } from "react-icons/fa";
-import { FaEnvelope } from "react-icons/fa";
+import { FaUser, FaLock, FaEnvelope, FaHome } from "react-icons/fa";
+import { authService } from "../../services/authService";
+import { useNavigate } from "react-router-dom";
 
 export default function LoginRegister() {
   const [action, setAction] = useState("");
-  const [loginData, setLoginData] = useState({ username: "", password: "" });
-  const [registerData, setRegisterData] = useState({ name: "", email: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { login } = useAuth();
+
+  // Check if user is already logged in
+  const currentUser = authService.getUser();
+  const isLoggedIn = authService.isAuthenticated();
+
+  // Login state
+  const [loginData, setLoginData] = useState({
+    username: "",
+    password: "",
+  });
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Register state
+  const [registerData, setRegisterData] = useState({
+    username: "",
+    email: "",
+    password: "",
+  });
+  const [registerError, setRegisterError] = useState("");
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [registerSuccess, setRegisterSuccess] = useState(false);
 
   const registerLink = () => {
     setAction(" active");
-    setError("");
+    setLoginError("");
+    setRegisterError("");
+    setRegisterSuccess(false);
   };
 
   const loginLink = () => {
     setAction("");
-    setError("");
+    setLoginError("");
+    setRegisterError("");
+    setRegisterSuccess(false);
   };
 
+  // Handle return to home
+  const handleReturnHome = () => {
+    navigate("/");
+  };
+
+  // Handle login form change
+  const handleLoginChange = (e) => {
+    setLoginData({
+      ...loginData,
+      [e.target.name]: e.target.value,
+    });
+    setLoginError("");
+  };
+
+  // Handle register form change
+  const handleRegisterChange = (e) => {
+    setRegisterData({
+      ...registerData,
+      [e.target.name]: e.target.value,
+    });
+    setRegisterError("");
+  };
+
+  // Handle login submit
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    setLoginError("");
+    setLoginLoading(true);
 
     try {
-      const response = await authAPI.login(loginData.username, loginData.password);
-      login(response.access_token, { email: loginData.username });
-      navigate("/"); // Redirect to homepage
+      await authService.login(loginData.username, loginData.password);
+      // Redirect to home after successful login
+      navigate("/");
     } catch (error) {
-      setError(error.response?.data?.detail || "Login failed");
+      setLoginError(error.message || "Login failed. Please try again.");
     } finally {
-      setLoading(false);
+      setLoginLoading(false);
     }
   };
 
+  // Handle register submit
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    setRegisterError("");
+    setRegisterLoading(true);
 
     try {
-      // Add register API call here when backend supports it
-      alert("Registration functionality coming soon!");
+      await authService.register(
+        registerData.username,
+        registerData.email,
+        registerData.password
+      );
+      setRegisterSuccess(true);
+
+      // Clear form
+      setRegisterData({
+        username: "",
+        email: "",
+        password: "",
+      });
+
+      // Switch to login after 2 seconds
+      setTimeout(() => {
+        loginLink();
+      }, 2000);
     } catch (error) {
-      setError(error.response?.data?.detail || "Registration failed");
+      setRegisterError(
+        error.message || "Registration failed. Please try again."
+      );
     } finally {
-      setLoading(false);
+      setRegisterLoading(false);
     }
   };
 
   return (
     <div className="login-page">
+      {/* Return Home Button - Only show if user is logged in */}
+      {isLoggedIn && (
+        <div className="return-home-container">
+          <button
+            className="return-home-btn"
+            onClick={handleReturnHome}
+            title="Return to home page"
+          >
+            <FaHome className="home-icon" />
+            <span>Return to Home</span>
+          </button>
+          <div className="current-user-info">
+            Currently logged in as: <strong>{currentUser?.name}</strong>
+          </div>
+        </div>
+      )}
+
       <div className={`wrapper${action}`}>
+        {/* LOGIN FORM */}
         <div className="form-box login">
           <form onSubmit={handleLoginSubmit}>
             <h1>Login</h1>
-            {error && <div className="error-message" style={{color: 'red', marginBottom: '10px'}}>{error}</div>}
+
+            {isLoggedIn && (
+              <div className="info-message">
+                You are already logged in. Login with a different account or{" "}
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleReturnHome();
+                  }}
+                >
+                  return home
+                </a>
+                .
+              </div>
+            )}
+
+            {loginError && <div className="error-message">{loginError}</div>}
+
             <div className="input-box">
-              <input 
-                type="email" 
-                placeholder="Email" 
+              <input
+                type="text"
+                name="username"
+                placeholder="Username or Email"
                 value={loginData.username}
-                onChange={(e) => setLoginData({...loginData, username: e.target.value})}
-                required 
+                onChange={handleLoginChange}
+                required
+                disabled={loginLoading}
               />
               <FaUser className="icon-login" />
             </div>
+
             <div className="input-box">
-              <input 
-                type="password" 
-                placeholder="Password" 
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
                 value={loginData.password}
-                onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                required 
+                onChange={handleLoginChange}
+                required
+                disabled={loginLoading}
               />
               <FaLock className="icon-login" />
             </div>
@@ -93,14 +198,24 @@ export default function LoginRegister() {
               <a href="#">Forgot password?</a>
             </div>
 
-            <button type="submit" disabled={loading}>
-              {loading ? "Logging in..." : "Login"}
+            <button type="submit" disabled={loginLoading}>
+              {loginLoading
+                ? "Logging in..."
+                : isLoggedIn
+                ? "Switch Account"
+                : "Login"}
             </button>
 
             <div className="register-link">
               <p>
                 Don't have an account?{" "}
-                <a href="#" onClick={registerLink}>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    registerLink();
+                  }}
+                >
                   Signup
                 </a>
               </p>
@@ -108,55 +223,82 @@ export default function LoginRegister() {
           </form>
         </div>
 
+        {/* REGISTER FORM */}
         <div className="form-box register">
           <form onSubmit={handleRegisterSubmit}>
             <h1>Signup</h1>
-            {error && <div className="error-message" style={{color: 'red', marginBottom: '10px'}}>{error}</div>}
+
+            {registerError && (
+              <div className="error-message">{registerError}</div>
+            )}
+
+            {registerSuccess && (
+              <div className="success-message">
+                Registration successful! Redirecting to login...
+              </div>
+            )}
+
             <div className="input-box">
-              <input 
-                type="text" 
-                placeholder="Name" 
-                value={registerData.name}
-                onChange={(e) => setRegisterData({...registerData, name: e.target.value})}
-                required 
+              <input
+                type="text"
+                name="username"
+                placeholder="Username"
+                value={registerData.username}
+                onChange={handleRegisterChange}
+                required
+                disabled={registerLoading}
               />
               <FaUser className="icon-login" />
             </div>
+
             <div className="input-box">
-              <input 
-                type="email" 
-                placeholder="Email" 
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
                 value={registerData.email}
-                onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
-                required 
+                onChange={handleRegisterChange}
+                required
+                disabled={registerLoading}
               />
               <FaEnvelope className="icon-login" />
             </div>
+
             <div className="input-box">
-              <input 
-                type="password" 
-                placeholder="Password" 
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
                 value={registerData.password}
-                onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
-                required 
+                onChange={handleRegisterChange}
+                required
+                disabled={registerLoading}
+                minLength={6}
               />
               <FaLock className="icon-login" />
             </div>
 
             <div className="remember-forgot">
               <label>
-                <input type="checkbox" />I agree to the terms & conditions
+                <input type="checkbox" required />I agree to the terms &
+                conditions
               </label>
             </div>
 
-            <button type="submit" disabled={loading}>
-              {loading ? "Signing up..." : "Signup"}
+            <button type="submit" disabled={registerLoading}>
+              {registerLoading ? "Signing up..." : "Signup"}
             </button>
 
             <div className="register-link">
               <p>
                 Already have an account?{" "}
-                <a href="#" onClick={loginLink}>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    loginLink();
+                  }}
+                >
                   Login
                 </a>
               </p>

@@ -24,6 +24,7 @@ app.add_middleware(
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
 
+# Include routers with /api prefix
 app.include_router(authentication.router)
 app.include_router(blogs.router)
 app.include_router(users.router)
