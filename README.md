@@ -27,6 +27,8 @@ pip install -r requirements.txt
 - Truy cập : https://www.enterprisedb.com/downloads/postgres-postgresql-downloads
 - AE có thể tải PostgreSQL Version 16.10 cho đồng bộ với nhau (hoặc tùy chọn)
 
+- Sau khi cài đặt xong, thì vào pgadmin 4, đăng nhập và tạo database mới tên là : asl_db
+
 #### 4. Set up file environtment
 Tạo file .env bên trong folder backend với nội dung 
 ```bash
@@ -45,7 +47,24 @@ DATABASE_URL=postgresql://user-name:pass-word@localhost:port/asl_db
 - SECRET_KEY và ALGORITHM giữ nguyên, sau này khi thống nhất host chung một postgresql rồi thì mình tạo SECRET_KEY khác cho bảo mật sau.
 
 #### 5. Lệnh chạy
-Đứng ở ngoài folder backend
+Mở 2 terminal cmd
+**`Terminal 1`**
+- Kích hoạt môi trường ảo
+```bash
+asl_env\Scripts\activate
+```
+- Chạy backend
 ```bash
 uvicorn backend.main:app --reload
 ```
+
+**`Terminal 2`**
+- Vào folder frontend
+```bash
+cd frontend
+```
+- Chạy frontend
+```bash
+npm run dev
+```
+Mở port từ terminal 2 này lên và nhận thành quả ^^
