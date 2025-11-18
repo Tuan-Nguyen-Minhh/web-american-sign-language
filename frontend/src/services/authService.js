@@ -3,13 +3,14 @@ import API_BASE_URL from '../config/api';
 export const authService = {
   async login(username, password) {
     try {
+      const formData = new FormData();
+      formData.append('username', username);
+      formData.append('password', password);
+      
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         credentials: 'include',
-        body: JSON.stringify({ username, password }),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -37,7 +38,7 @@ export const authService = {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ name: username, email, password }),
       });
 
       if (!response.ok) {

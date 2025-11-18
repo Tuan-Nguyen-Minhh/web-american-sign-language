@@ -6,11 +6,10 @@ from sqlalchemy.orm import Session
 
 router = APIRouter(
     prefix="/api/auth",
-    prefix="/api/auth",
     tags=['Authentication']
 )
 
-@router.post('/login', response_model=schemas.TokenData)
+@router.post('/login', response_model=schemas.LoginResponse)
 def login(request: Annotated[OAuth2PasswordRequestForm, Depends()], db: Annotated[Session, Depends(database.get_db)]):
     # Try to find user by email or username
     user = db.query(models.User).filter(
@@ -18,9 +17,9 @@ def login(request: Annotated[OAuth2PasswordRequestForm, Depends()], db: Annotate
     ).first()
 
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Invalid Credentials')
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid Credentials')
     if not jwt_token.verify_password(request.password, user.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Incorrect password')
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Incorrect password')
     
     access_token = jwt_token.create_access_token(data={
         "sub": user.email,
@@ -42,7 +41,7 @@ def login(request: Annotated[OAuth2PasswordRequestForm, Depends()], db: Annotate
 def register(request: schemas.User, db: Annotated[Session, Depends(database.get_db)]):
     # Check if user already exists
     existing_user = db.query(models.User).filter(
-        (models.User.email == request.email) | (models.User.name == request.username)
+        (models.User.email == request.email) | (models.User.name == request.name)
     ).first()
 
     if existing_user:
@@ -59,7 +58,7 @@ def register(request: schemas.User, db: Annotated[Session, Depends(database.get_
     
     # Create new user
     new_user = models.User(
-        name=request.username,
+        name=request.name,
         email=request.email,
         password=jwt_token.hash_password(request.password)
     )

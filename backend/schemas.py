@@ -1,5 +1,5 @@
-from typing import List, Optional
-from pydantic import BaseModel, EmailStr
+from typing import List
+from pydantic import BaseModel
 
 class BlogBase(BaseModel):
     title: str
@@ -14,14 +14,7 @@ class User(BaseModel):
     email: str
     password: str
 
-class UserCreate(BaseModel):
-    """Schema for user registration"""
-    username: str
-    email: EmailStr
-    password: str
-
 class ShowUser(BaseModel):
-    id: int
     id: int
     name: str
     email: str
@@ -39,18 +32,24 @@ class ShowBlog(BaseModel):
         from_attributes = True
 
 class Login(BaseModel):
-    """Schema for login"""
-    username: str  # Can be email or username
+    username: str
     password: str
 
 class Token(BaseModel):
     access_token: str
     token_type: str
-    user: dict | None = None
+
+class UserInfo(BaseModel):
+    id: int
+    name: str
+    email: str
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserInfo
 
 class TokenData(BaseModel):
     email: str | None = None
-    user_id: int | None = None
-    name: str | None = None
     user_id: int | None = None
     name: str | None = None

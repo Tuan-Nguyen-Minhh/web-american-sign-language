@@ -25,12 +25,7 @@ function ProtectedRoute({ children }) {
 
 function AppContent() {
   const location = useLocation();
-  const { isAuthenticated, loading } = useAuth();
   const isLoginPage = location.pathname === "/login";
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <div className="App">
@@ -90,11 +85,9 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </AuthProvider>
+    <Router>
+      <AppContent />
+    </Router>
   );
 }
 

@@ -1,14 +1,8 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faHands } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 
 export default function Header() {
-  const { logout } = useAuth();
-
-  const handleLogout = () => {
-    logout();
-  };
   return (
     <header className="header">
       <div className="container">
@@ -34,9 +28,9 @@ export default function Header() {
               </Link>
             </li>
             <li>
-              <button onClick={handleLogout} className="nav-link" style={{background: 'none', border: 'none', cursor: 'pointer'}}>
-                Logout
-              </button>
+              <Link to="/login" className="nav-link">
+                Login
+              </Link>
             </li>
             <li>
               <Link to="/account" className="nav-link">

@@ -1,7 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { authAPI } from "../../services/api";
 import "./LoginRegister.css";
 import { FaUser, FaLock, FaEnvelope, FaHome } from "react-icons/fa";
 import { authService } from "../../services/authService";

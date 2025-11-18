@@ -35,7 +35,6 @@ def destroy(id:int, db: Annotated[Session, Depends(database.get_db)], current_us
     db.delete(blog)
     db.commit()
     return None
-    return None
 
 @router.put('/{id}', status_code=status.HTTP_202_ACCEPTED)
 def update(id:int, request: schemas.Blog, db: Annotated[Session, Depends(database.get_db)], current_user: Annotated[schemas.User, Depends(jwt_token.get_current_user)]):
@@ -50,6 +49,7 @@ def update(id:int, request: schemas.Blog, db: Annotated[Session, Depends(databas
     
     blog.title = request.title
     blog.body = request.body
+    db.commit()
     db.refresh(blog)
     return blog
 
