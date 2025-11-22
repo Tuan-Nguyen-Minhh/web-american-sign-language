@@ -1,34 +1,75 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from .. import schemas,database, models, token
+from .. import jwt_token, schemas,database, models
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from ..config import templates
 
 router = APIRouter(
+    prefix="/api/auth",
     tags=['Authentication']
 )
 
-@router.post('/login')
-def login(request: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(database.get_db)):
-    user = db.query(models.User).filter(models.User.email == request.username).first()
+@router.post('/login', response_model=schemas.LoginResponse)
+def login(request: Annotated[OAuth2PasswordRequestForm, Depends()], db: Annotated[Session, Depends(database.get_db)]):
+    # Try to find user by email or username
+    user = db.query(models.User).filter(
+        (models.User.email == request.username) | (models.User.name == request.username)
+    ).first()
+
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Invalid Credentials')
-    if not token.verify_password(request.password, user.password):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Incorrect password')
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid Credentials')
+    if not jwt_token.verify_password(request.password, user.password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Incorrect password')
     
-    access_token = token.create_access_token(data={"sub": user.email})
-    return schemas.Token(access_token=access_token, token_type="bearer")
+    access_token = jwt_token.create_access_token(data={
+        "sub": user.email,
+        "user_id": user.id,
+        "name": user.name
+    })
 
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email
+        }
+    }
 
-@router.get("/")
-async def home_page(request: Request):
-    return templates.TemplateResponse("home_page.html", {"request": request})
+@router.post('/register', status_code=status.HTTP_201_CREATED, response_model=schemas.ShowUser)
+def register(request: schemas.User, db: Annotated[Session, Depends(database.get_db)]):
+    # Check if user already exists
+    existing_user = db.query(models.User).filter(
+        (models.User.email == request.email) | (models.User.name == request.name)
+    ).first()
 
-@router.get("/login")
-async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    if existing_user:
+        if existing_user.email == request.email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Email already registered'
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Username already taken'
+            )
+    
+    # Create new user
+    new_user = models.User(
+        name=request.name,
+        email=request.email,
+        password=jwt_token.hash_password(request.password)
+    )
+    
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    return new_user
 
-@router.get("/register")
-async def register_page(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
+# Get current logged-in user information (USE FOR profile)
+@router.get('/me', response_model=schemas.ShowUser)
+def get_current_user_info(current_user: models.User = Depends(jwt_token.get_current_user)):
+    return current_user

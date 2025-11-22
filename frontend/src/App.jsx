@@ -7,8 +7,21 @@ import {
   Routes,
   Route,
   useLocation,
+  Navigate,
 } from "react-router-dom";
 import LoginRegister from "./components/login/LoginRegister";
+import { authService } from "./services/authService";
+
+// Protected Route Component
+function ProtectedRoute({ children }) {
+  const isAuthenticated = authService.isAuthenticated();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
 
 function AppContent() {
   const location = useLocation();
@@ -21,10 +34,46 @@ function AppContent() {
 
       <main>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<div>About Page</div>} />
-          <Route path="/contact" element={<div>Contact Page</div>} />
+          {/* Protected Routes - Require Authentication */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/about"
+            element={
+              <ProtectedRoute>
+                <div>About Page</div>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contact"
+            element={
+              <ProtectedRoute>
+                <div>Contact Page</div>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Public Route - Login (ALLOW ACCESS EVEN IF LOGGED IN) */}
           <Route path="/login" element={<LoginRegister />} />
+
+          {/* Catch-all route - redirect to home or login */}
+          <Route
+            path="*"
+            element={
+              authService.isAuthenticated() ? (
+                <Navigate to="/" replace />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
         </Routes>
       </main>
 
