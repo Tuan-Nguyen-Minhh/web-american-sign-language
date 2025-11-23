@@ -9,7 +9,7 @@ from pwdlib import PasswordHash
 import jwt
 from .config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 password_hash = PasswordHash.recommended()
 
 def hash_password(password: str):

@@ -6,3 +6,8 @@ pwdlib[argon2]
 pyjwt
 python-multipart==0.0.20
 python-dotenv==1.2.1
+
+ultralytics>=8.0.0
+opencv-python>=4.0.0
+numpy>=1.21.0
+pillow>=8.0.0
