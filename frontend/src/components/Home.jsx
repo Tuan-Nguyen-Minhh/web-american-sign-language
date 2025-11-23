@@ -1,4 +1,3 @@
-import PageHeading from "./PageHeading";
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import apiService from '../services/apiService';
 import './Home.css';
@@ -49,7 +48,14 @@ export default function Home() {
       videoRef.current.srcObject = null;
     }
     setIsStreamActive(false);
-    stopDetection();
+    
+    // Stop detection if it's running
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setIsDetecting(false);
+    setDetections([]);
   }, []);
 
   // Capture frame and convert to base64
@@ -174,7 +180,6 @@ export default function Home() {
 
   return (
     <div className="hand-detection-camera">
-      <PageHeading />
       <div className="camera-container">
         <div className="video-wrapper">
           <video

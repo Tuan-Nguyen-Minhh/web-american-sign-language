@@ -1,7 +1,10 @@
-import Header from "./components/Header";
+import Header from "./components/header/Header";
 import Footer from "./components/footer/Footer";
 import React from "react";
 import Home from "./components/Home";
+import Profile from "./components/profile/Profile";
+import About from "./components/about/About";
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -47,15 +50,15 @@ function AppContent() {
             path="/about"
             element={
               <ProtectedRoute>
-                <div>About Page</div>
+                <About />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/contact"
+            path="/contribute"
             element={
               <ProtectedRoute>
-                <div>Contact Page</div>
+                <div>Contribute Page</div>
               </ProtectedRoute>
             }
           />
@@ -72,6 +75,14 @@ function AppContent() {
               ) : (
                 <Navigate to="/login" replace />
               )
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
             }
           />
         </Routes>

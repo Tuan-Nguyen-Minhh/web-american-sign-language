@@ -44,7 +44,7 @@ body {
 }
 
 .wrapper.active {
-  height: 520px;
+  height: 600px;
 }
 
 .wrapper .form-box {
@@ -66,17 +66,19 @@ body {
   position: absolute;
   transition: none;
   translate: 400px;
+  
 }
 
 .wrapper.active .form-box.register {
   transition: translate .18s ease;
   translate: 0;
+  
 }
 
 form h1 {
   font-size: 32px;
   text-align: center;
-  margin: 0 0 24px;
+  margin: 24px 0 24px;
   color: var(--text-highlight);
 }
 
@@ -84,7 +86,7 @@ form h1 {
   position: relative;
   width: 100%;
   height: 50px;
-  margin: 30px 0;
+  margin: 25px 0;
 }
 
 .input-box input {
@@ -97,7 +99,8 @@ form h1 {
   border-radius: 40px;
   font-size: 16px;
   color: var(--text-dark);
-  padding: 20px 45px 20px 20px;
+  padding: 20px 40px 20px 45px;
+  /* Changed: left padding increased, right padding decreased */
 }
 
 .input-box input::placeholder {
@@ -106,7 +109,8 @@ form h1 {
 
 .input-box .icon-login {
   position: absolute;
-  right: 20px;
+  left: 20px;
+  /* Changed: from right: 20px to left: 20px */
   top: 50%;
   translate: 0 -50%;
   font-size: 16px;
@@ -127,11 +131,13 @@ form .remember-forgot {
 .remember-forgot label input {
   accent-color: var(--text-highlight);
   margin-right: 4px;
+  margin-top: 10px;
 }
 
 .remember-forgot a {
   color: var(--text-highlight);
   text-decoration: none;
+  margin-top: 10px;
 }
 
 .remember-forgot a:hover {
@@ -161,7 +167,7 @@ form button:hover {
 form .register-link {
   font-size: 14.5px;
   text-align: center;
-  margin: 20px 0 15px;
+  margin: 20px 0px 15px;
   color: var(--text-secondary);
 }
 
@@ -303,6 +309,83 @@ form .register-link {
   border: 1px solid #cfc;
 }
 
+.input-box.password-input {
+  position: relative;
+}
+
+/* Password toggle icon */
+.password-toggle-icon {
+  position: absolute;
+  right: 20px;
+  /* Adjust based on your lock icon position */
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #888;
+  font-size: 18px;
+  transition: color 0.3s ease;
+  z-index: 10;
+  user-select: none;
+}
+
+.password-toggle-icon:hover {
+  color: #667eea;
+}
+
+.password-toggle-icon:active {
+  color: #764ba2;
+}
+
+.password-match {
+  border-color: #4caf50 !important;
+}
+
+.password-mismatch {
+  border-color: #f44336 !important;
+}
+
+/* Match indicator icon (✓ or ✗) */
+.password-match-indicator {
+  position: absolute;
+  right: 75px;
+  /* Adjust based on your layout */
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  font-weight: bold;
+  z-index: 11;
+}
+
+.password-match .password-match-indicator {
+  color: #4caf50;
+  /* Green checkmark */
+}
+
+.password-mismatch .password-match-indicator {
+  color: #f44336;
+  /* Red X */
+}
+
+.password-hint {
+  font-size: 12px;
+  margin-bottom: 10px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  text-align: left;
+  text-align: center;
+}
+
+.password-hint {
+  color: #f44336;
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+.password-hint.success {
+  color: #4caf50;
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .return-home-container {
@@ -318,5 +401,15 @@ form .register-link {
   .current-user-info {
     font-size: 12px;
     padding: 6px 12px;
+  }
+}
+@media (max-width: 480px) {
+  .password-toggle-icon {
+    right: 40px;
+    font-size: 16px;
+  }
+
+  .input-box.password-input input {
+    padding-right: 70px;
   }
 }

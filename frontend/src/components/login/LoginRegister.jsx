@@ -1,122 +1,42 @@
-import React, { useState } from "react";
+import React from "react";
 import "./LoginRegister.css";
 import { FaUser, FaLock, FaEnvelope, FaHome } from "react-icons/fa";
-import { authService } from "../../services/authService";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
+import { useLogin } from "../../hooks/useLogin";
+import { useRegister } from "../../hooks/useRegister";
+import { useNavigation } from "../../hooks/useNavigation";
+import usePasswordToggle from "../../hooks/usePasswordToggle";
 
 export default function LoginRegister() {
-  const [action, setAction] = useState("");
-  const navigate = useNavigate();
+  const { action, currentUser, isLoggedIn, registerLink, loginLink } =
+    useAuth();
+  const { handleReturnHome } = useNavigation();
 
-  // Check if user is already logged in
-  const currentUser = authService.getUser();
-  const isLoggedIn = authService.isAuthenticated();
+  const {
+    loginData,
+    loginError,
+    loginLoading,
+    handleLoginChange,
+    handleLoginSubmit,
+  } = useLogin();
 
-  // Login state
-  const [loginData, setLoginData] = useState({
-    username: "",
-    password: "",
-  });
-  const [loginError, setLoginError] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
+  const {
+    registerData,
+    registerError,
+    registerLoading,
+    registerSuccess,
+    handleRegisterChange,
+    handleRegisterSubmit,
+  } = useRegister(loginLink);
 
-  // Register state
-  const [registerData, setRegisterData] = useState({
-    username: "",
-    email: "",
-    password: "",
-  });
-  const [registerError, setRegisterError] = useState("");
-  const [registerLoading, setRegisterLoading] = useState(false);
-  const [registerSuccess, setRegisterSuccess] = useState(false);
+  // Password toggle hooks - separate for each password field
+  const loginPasswordToggle = usePasswordToggle();
+  const registerPasswordToggle = usePasswordToggle();
+  const confirmPasswordToggle = usePasswordToggle();
 
-  const registerLink = () => {
-    setAction(" active");
-    setLoginError("");
-    setRegisterError("");
-    setRegisterSuccess(false);
-  };
-
-  const loginLink = () => {
-    setAction("");
-    setLoginError("");
-    setRegisterError("");
-    setRegisterSuccess(false);
-  };
-
-  // Handle return to home
-  const handleReturnHome = () => {
-    navigate("/");
-  };
-
-  // Handle login form change
-  const handleLoginChange = (e) => {
-    setLoginData({
-      ...loginData,
-      [e.target.name]: e.target.value,
-    });
-    setLoginError("");
-  };
-
-  // Handle register form change
-  const handleRegisterChange = (e) => {
-    setRegisterData({
-      ...registerData,
-      [e.target.name]: e.target.value,
-    });
-    setRegisterError("");
-  };
-
-  // Handle login submit
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    setLoginError("");
-    setLoginLoading(true);
-
-    try {
-      await authService.login(loginData.username, loginData.password);
-      // Redirect to home after successful login
-      navigate("/");
-    } catch (error) {
-      setLoginError(error.message || "Login failed. Please try again.");
-    } finally {
-      setLoginLoading(false);
-    }
-  };
-
-  // Handle register submit
-  const handleRegisterSubmit = async (e) => {
-    e.preventDefault();
-    setRegisterError("");
-    setRegisterLoading(true);
-
-    try {
-      await authService.register(
-        registerData.username,
-        registerData.email,
-        registerData.password
-      );
-      setRegisterSuccess(true);
-
-      // Clear form
-      setRegisterData({
-        username: "",
-        email: "",
-        password: "",
-      });
-
-      // Switch to login after 2 seconds
-      setTimeout(() => {
-        loginLink();
-      }, 2000);
-    } catch (error) {
-      setRegisterError(
-        error.message || "Registration failed. Please try again."
-      );
-    } finally {
-      setRegisterLoading(false);
-    }
-  };
+  // Check if passwords match in real-time
+  const passwordsMatch = registerData.password === registerData.confirmPassword;
+  const showMatchIndicator = registerData.confirmPassword.length > 0;
 
   return (
     <div className="login-page">
@@ -143,22 +63,6 @@ export default function LoginRegister() {
           <form onSubmit={handleLoginSubmit}>
             <h1>Login</h1>
 
-            {isLoggedIn && (
-              <div className="info-message">
-                You are already logged in. Login with a different account or{" "}
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleReturnHome();
-                  }}
-                >
-                  return home
-                </a>
-                .
-              </div>
-            )}
-
             {loginError && <div className="error-message">{loginError}</div>}
 
             <div className="input-box">
@@ -174,9 +78,9 @@ export default function LoginRegister() {
               <FaUser className="icon-login" />
             </div>
 
-            <div className="input-box">
+            <div className="input-box password-input">
               <input
-                type="password"
+                type={loginPasswordToggle.inputType}
                 name="password"
                 placeholder="Password"
                 value={loginData.password}
@@ -185,6 +89,15 @@ export default function LoginRegister() {
                 disabled={loginLoading}
               />
               <FaLock className="icon-login" />
+              <loginPasswordToggle.Icon
+                className="password-toggle-icon"
+                onClick={loginPasswordToggle.toggleVisibility}
+                title={
+                  loginPasswordToggle.visible
+                    ? "Hide password"
+                    : "Show password"
+                }
+              />
             </div>
 
             <div className="remember-forgot">
@@ -196,11 +109,7 @@ export default function LoginRegister() {
             </div>
 
             <button type="submit" disabled={loginLoading}>
-              {loginLoading
-                ? "Logging in..."
-                : isLoggedIn
-                ? "Switch Account"
-                : "Login"}
+              {loginLoading ? "Logging in..." : "Login"}
             </button>
 
             <div className="register-link">
@@ -261,9 +170,10 @@ export default function LoginRegister() {
               <FaEnvelope className="icon-login" />
             </div>
 
-            <div className="input-box">
+            {/* PASSWORD INPUT */}
+            <div className="input-box password-input">
               <input
-                type="password"
+                type={registerPasswordToggle.inputType}
                 name="password"
                 placeholder="Password"
                 value={registerData.password}
@@ -273,7 +183,53 @@ export default function LoginRegister() {
                 minLength={6}
               />
               <FaLock className="icon-login" />
+              <registerPasswordToggle.Icon
+                className="password-toggle-icon"
+                onClick={registerPasswordToggle.toggleVisibility}
+                title={
+                  registerPasswordToggle.visible
+                    ? "Hide password"
+                    : "Show password"
+                }
+              />
             </div>
+
+            {/* CONFIRM PASSWORD INPUT */}
+            <div
+              className={`input-box password-input ${
+                showMatchIndicator
+                  ? passwordsMatch
+                    ? "password-match"
+                    : "password-mismatch"
+                  : ""
+              }`}
+            >
+              <input
+                type={confirmPasswordToggle.inputType}
+                name="confirmPassword"
+                placeholder="Confirm Password"
+                value={registerData.confirmPassword}
+                onChange={handleRegisterChange}
+                required
+                disabled={registerLoading}
+                minLength={6}
+              />
+              <FaLock className="icon-login" />
+              <confirmPasswordToggle.Icon
+                className="password-toggle-icon"
+                onClick={confirmPasswordToggle.toggleVisibility}
+                title={
+                  confirmPasswordToggle.visible
+                    ? "Hide password"
+                    : "Show password"
+                }
+              />
+            </div>
+
+            {/* Password match message */}
+            {showMatchIndicator && !passwordsMatch && (
+              <div className="password-hint">Passwords do not match</div>
+            )}
 
             <div className="remember-forgot">
               <label>
