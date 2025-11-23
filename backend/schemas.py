@@ -1,5 +1,5 @@
 from typing import List
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 class BlogBase(BaseModel):
     title: str
@@ -14,11 +14,18 @@ class User(BaseModel):
     email: str
     password: str
 
+
+
 class ShowUser(BaseModel):
     id: int
     name: str
     email: str
     blogs: List[Blog] = []
+
+class UserCreate(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
 
     class Config():
         from_attributes = True

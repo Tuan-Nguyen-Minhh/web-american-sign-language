@@ -1,8 +1,18 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faHands } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
+import { TbLogout } from "react-icons/tb";
+import { authService } from "../../services/authService";
+import "./header.css"; // Add this import
 
 export default function Header() {
+  const handleLogout = () => {
+    authService.logout();
+  };
+
+  const isAuthenticated = authService.isAuthenticated();
+  const currentUser = authService.getUser();
+
   return (
     <header className="header">
       <div className="container">
@@ -24,19 +34,28 @@ export default function Header() {
             </li>
             <li>
               <Link to="/contact" className="nav-link">
-                Contact
+                Contribute
               </Link>
             </li>
-            <li>
-              <Link to="/login" className="nav-link">
-                Login
-              </Link>
-            </li>
-            <li>
-              <Link to="/account" className="nav-link">
-                <FontAwesomeIcon icon={faUser} />
-              </Link>
-            </li>
+
+            {isAuthenticated ? (
+              <>
+                <li className="nav-item">
+                  <TbLogout onClick={handleLogout} />
+                </li>
+                <li className="nav-item">
+                  <Link to="/profile" className="nav-link">
+                    <FontAwesomeIcon icon={faUser} />
+                  </Link>
+                </li>
+              </>
+            ) : (
+              <li className="nav-item">
+                <Link to="/login" className="nav-link">
+                  Login
+                </Link>
+              </li>
+            )}
           </ul>
         </nav>
       </div>
