@@ -6,3 +6,4 @@ pwdlib[argon2]
 pyjwt
 python-multipart==0.0.20
 python-dotenv==1.2.1
+jinja2
