@@ -1,6 +1,4 @@
-/* ======================================= */
-/* 1. IMPORTS & BIẾN MÀU SẮC (:ROOT) */
-/* ======================================= */
+
 @import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&display=swap');
 
 :root {
@@ -32,9 +30,7 @@
   --font-size-lg: 1.125rem;
 }
 
-/* ======================================= */
-/* 2. DARK MODE OVERRIDES (.dark) - QUAN TRỌNG */
-/* ======================================= */
+
 .dark {
   /* Ghi đè màu nền sang tối */
   --bg-light: #181818; 
@@ -56,9 +52,7 @@
   --hover-color: #FFFFFF;   /* Trắng tinh khi hover */
 }
 
-/* ======================================= */
-/* 3. BASE STYLES & PRODUCT STYLES (CŨ) */
-/* ======================================= */
+
 body {
   font-family: var(--font-family);
   background-color: var(--bg-light);
@@ -193,9 +187,7 @@ body {
   color: var(--primary-color);
 }
 
-/* ======================================= */
-/* 4. LAYOUT WEBCAM & RESULT (MỚI) */
-/* ======================================= */
+
 #root {
   width: 100%;
   padding: 0;
