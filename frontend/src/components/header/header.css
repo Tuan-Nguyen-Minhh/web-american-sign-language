@@ -59,6 +59,7 @@
   padding: 0;
   display: flex;
   gap: 24px;
+  align-items: center;
 }
 
 @media (min-width: 1024px) {

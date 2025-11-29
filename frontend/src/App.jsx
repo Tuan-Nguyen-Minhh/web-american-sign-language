@@ -1,10 +1,9 @@
 import Header from "./components/header/Header";
 import Footer from "./components/footer/Footer";
-import React from "react";
-import Home from "./components/Home";
-import Profile from "./components/profile/Profile";
+import React, { useState, useEffect } from "react"; 
 import About from "./components/about/About";
-
+import Home from "./components/Home";
+import Profile from "./components/profile/Profile"; 
 import {
   BrowserRouter as Router,
   Routes,
@@ -15,7 +14,6 @@ import {
 import LoginRegister from "./components/login/LoginRegister";
 import { authService } from "./services/authService";
 
-// Protected Route Component
 function ProtectedRoute({ children }) {
   const isAuthenticated = authService.isAuthenticated();
 
@@ -30,14 +28,38 @@ function AppContent() {
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
 
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme === 'dark';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDarkMode) {
+      root.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      root.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
+
+  // 3. Hàm toggle để truyền xuống Header
+  const toggleTheme = () => {
+    setIsDarkMode(prev => !prev);
+  };
+  // ---------------------------------------------
+
   return (
     <div className="App">
-      {/* Only show Header & Footer if NOT on login page */}
-      {!isLoginPage && <Header />}
+      {/* Only show Header if NOT on login page */}
+      {/* [CẬP NHẬT]: Truyền props isDarkMode và toggleTheme cho Header */}
+      {!isLoginPage && (
+        <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
+      )}
 
       <main>
         <Routes>
-          {/* Protected Routes - Require Authentication */}
           <Route
             path="/"
             element={
@@ -88,7 +110,6 @@ function AppContent() {
         </Routes>
       </main>
 
-      {/* Only show Footer if NOT on login page */}
       {!isLoginPage && <Footer />}
     </div>
   );

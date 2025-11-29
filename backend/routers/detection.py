@@ -16,13 +16,35 @@ router = APIRouter(
 model_path = Path(__file__).parent.parent / "detection" / "yolov8.pt"
 model = None
 
-# Load YOLO model
-model = YOLO(str(model_path))
+def load_model():
+    global model
+    try:
+        if model_path.exists():
+            model = YOLO(str(model_path))
+            print(f"YOLO model loaded successfully from {model_path}")
+        else:
+            print(f"Warning: YOLO model not found at {model_path}")
+            model = None
+    except Exception as e:
+        print(f"Error loading YOLO model: {e}")
+        model = None
+
+# Load model on import
+load_model()
 
 class HandDetectionService:
     @staticmethod
     # Process a single frame and detect hands (bounding boxes and confidence scores)
     def process_frame(image_data: bytes) -> dict:
+        """
+        Process a single frame and detect hands
+        
+        Args:
+            image_data: Raw image bytes
+            
+        Returns:
+            dict: Detection results with bounding boxes and confidence scores
+        """
         try:
             # Convert bytes to numpy array
             nparr = np.frombuffer(image_data, np.uint8)
@@ -30,6 +52,10 @@ class HandDetectionService:
             
             if img is None:
                 raise ValueError("Could not decode image")
+            
+            # Check if model is loaded
+            if model is None:
+                raise ValueError("YOLO model is not loaded")
             
             # Run YOLO detection
             results = model(img)[0]
@@ -66,6 +92,15 @@ class HandDetectionService:
     # Process a base64 encoded frame
     @staticmethod
     def process_base64_frame(base64_data: str) -> dict:
+        """
+        Process a base64 encoded frame
+        
+        Args:
+            base64_data: Base64 encoded image string
+            
+        Returns:
+            dict: Detection results
+        """
         try:
             # Remove data URL prefix if present
             if ',' in base64_data:
@@ -86,10 +121,19 @@ class HandDetectionService:
 
 # Detect hands in uploaded image file
 @router.post("/detect-frame", response_model=schemas.DetectionResponse)
-async def detect_hands_from_upload(file: UploadFile = File(...),current_user: models.User = Depends(jwt_token.get_current_user)):
+async def detect_hands_from_upload(
+    file: UploadFile = File(...),
+    current_user: models.User = Depends(jwt_token.get_current_user)
+):
+    """
+    Detect hands in uploaded image file
+    """
     # Validate file type
     if not file.content_type.startswith('image/'):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="File must be an image")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be an image"
+        )
     
     try:
         # Read file contents
@@ -101,18 +145,49 @@ async def detect_hands_from_upload(file: UploadFile = File(...),current_user: mo
         return JSONResponse(content=result)
         
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=f"Detection failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Detection failed: {str(e)}"
+        )
 
-# Detect hands in base64 encoded image
-@router.post("/detect-base64", response_model=schemas.DetectionResponse)
-async def detect_hands_from_base64(request: schemas.DetectionRequest,current_user: models.User = Depends(jwt_token.get_current_user)):
+# ASL Prediction endpoint (compatible with LiveDetectionInterface)
+@router.post("/predict", response_model=schemas.ASLPredictionResponse)
+async def predict_asl_sign(request: schemas.DetectionRequest, current_user: models.User = Depends(jwt_token.get_current_user)):
+    """
+    ASL Sign prediction endpoint - returns prediction and confidence format
+    Compatible with LiveDetectionInterface component
+    """
     try:
         base64_data = request.image
         
-        # Process the frame
+        # Process the frame using existing detection service
         result = HandDetectionService.process_base64_frame(base64_data)
         
-        return JSONResponse(content=result)
-        
+        if result["success"] and result["detections"]:
+            # Get the highest confidence detection
+            best_detection = max(result["detections"], key=lambda x: x["confidence"])
+            
+            # For now, return generic hand detection result
+            # TODO: Replace with actual ASL sign classification
+            prediction = f"Hand Gesture ({result['total_hands']} hands)"
+            confidence = best_detection["confidence"]
+            
+            return JSONResponse(content={
+                "prediction": prediction,
+                "confidence": confidence,
+                "total_hands": result["total_hands"],
+                "detections": result["detections"]
+            })
+        else:
+            return JSONResponse(content={
+                "prediction": "No gesture detected",
+                "confidence": 0.0,
+                "total_hands": 0,
+                "detections": []
+            })
+            
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=f"Detection failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"ASL prediction failed: {str(e)}"
+        )

@@ -74,3 +74,9 @@ class DetectionResponse(BaseModel):
 
 class DetectionRequest(BaseModel):
     image: str  # base64 encoded image
+
+class ASLPredictionResponse(BaseModel):
+    prediction: str
+    confidence: float
+    total_hands: int
+    detections: List[HandDetection] = []

@@ -12,6 +12,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # Serve React static files (for production)
 static_dir = Path(__file__).parent.parent / "frontend" / "dist"
+
+# SỬA LỖI: Định nghĩa assets_dir ở cấp độ module, không nằm trong if
+assets_dir = static_dir / "assets" # <--- THÊM DÒNG NÀY VÀO TRƯỚC IF
+
 if static_dir.exists():
-    # Mount assets
-    assets_dir = static_dir / "assets"
+    # Phần code bên trong if này có thể giữ nguyên hoặc loại bỏ tùy mục đích
+    pass
