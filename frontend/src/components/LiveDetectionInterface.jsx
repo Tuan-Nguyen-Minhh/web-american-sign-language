@@ -193,8 +193,18 @@ const LiveDetectionInterface = () => {
             setDetectionLog([]);
             speakButtonAction("Starting detection");
         } else {
+            // Update UI immediately (non-blocking)
             setTranslatedText("Detection Stopped");
             speakButtonAction("Detection stopped");
+            
+            // Increment session counter in background (don't await)
+            apiService.request('/detection-history/increment-session', {
+                method: 'POST'
+            }).then(response => {
+                console.log('Session counter incremented:', response);
+            }).catch(error => {
+                console.error('Failed to increment session counter:', error);
+            });
         }
         setIsDetecting(prev => !prev);
     };
@@ -269,21 +279,30 @@ const LiveDetectionInterface = () => {
         }
     }, [detections, drawDetections, isDetecting, isCameraOn]);
 
-    // Hàm Save (Tải xuống file TXT)
-    const handleSave = () => {
+    // Save detection session to database
+    const handleSave = async () => {
         if (!detectionLog.length) return;
-        const logText = detectionLog.map(item => `${item.word} (${Math.round(item.confidence * 100)}%)`).join('\n');
         
-        const element = document.createElement("a");
-        const file = new Blob([logText], {type: 'text/plain'});
-        element.href = URL.createObjectURL(file);
-        element.download = "asl_detection_log.txt";
-        document.body.appendChild(element); 
-        element.click();
-        
-        speakButtonAction(`Saved ${detectionLog.length} detections to file`);
-        alert(`Đã lưu ${detectionLog.length} từ vào file "asl_detection_log.txt"`);
+        try {
+            // Save to database
+            const sessionName = `Detection Session ${new Date().toLocaleString()}`;
+            await apiService.request('/detection-history/save', {
+                method: 'POST',
+                body: JSON.stringify({
+                    session_name: sessionName,
+                    detections: detectionLog
+                })
+            });
+            
+            speakButtonAction(`Saved ${detectionLog.length} detections to database`);
+            alert(`Successfully saved ${detectionLog.length} detections to your profile!`);
+            
+        } catch (error) {
+            console.error('Failed to save detection history:', error);
+            alert(`Failed to save: ${error.message}`);
+        }
     };
+
 
     return (
         <div className="webcam-container">

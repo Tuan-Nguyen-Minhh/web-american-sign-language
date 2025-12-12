@@ -20,7 +20,11 @@ class ShowUser(BaseModel):
     id: int
     name: str
     email: str
+    total_detection_sessions: int = 0
     blogs: List[Blog] = []
+    
+    class Config():
+        from_attributes = True
 
 class UserCreate(BaseModel):
     username: str
@@ -80,3 +84,21 @@ class ASLPredictionResponse(BaseModel):
     confidence: float
     total_hands: int
     detections: List[HandDetection] = []
+
+class DetectionItem(BaseModel):
+    word: str
+    confidence: float
+
+class SaveDetectionHistoryRequest(BaseModel):
+    session_name: str | None = None
+    detections: List[DetectionItem]
+
+class DetectionHistoryResponse(BaseModel):
+    id: int
+    session_name: str | None
+    total_detections: int
+    created_at: str
+    detections: List[DetectionItem]
+
+    class Config:
+        from_attributes = True

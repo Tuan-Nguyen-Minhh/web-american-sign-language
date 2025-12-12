@@ -4,7 +4,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from . import models
 from .database import engine
-from .routers import blogs, users, authentication, detection
+from .routers import blogs, users, authentication, detection, detection_history
 from .config import static_dir, assets_dir
 
 app = FastAPI(
@@ -29,6 +29,7 @@ app.include_router(authentication.router)
 app.include_router(blogs.router)
 app.include_router(users.router)
 app.include_router(detection.router)
+app.include_router(detection_history.router)
 
 # FOR PRODUCTION
 if assets_dir.exists():

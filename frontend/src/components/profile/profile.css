@@ -297,6 +297,35 @@
   transform: translateY(-1px);
 }
 
+.play-btn {
+  flex: 1;
+  background-color: #28a745;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.play-btn:hover:not(:disabled) {
+  background-color: #218838;
+  transform: translateY(-1px);
+}
+
+.play-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;
@@ -542,3 +571,104 @@
   }
 }
 
+/* Detection History Specific Styles */
+.session-info {
+  flex: 1;
+}
+
+.session-name {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #18122B;
+  font-weight: 600;
+}
+
+.session-date {
+  display: block;
+  font-size: 0.85rem;
+  color: #635985;
+  margin-top: 4px;
+}
+
+.detections-preview {
+  margin-top: 12px;
+}
+
+.gesture-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.gesture-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background-color: #EFE9E3;
+  color: #18122B;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.more-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background-color: #635985;
+  color: #FFFFFF;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-info-row {
+  padding: 10px 0;
+  border-bottom: 1px solid #EFE9E3;
+  color: #18122B;
+}
+
+.modal-detections {
+  margin-top: 20px;
+}
+
+.modal-detections h4 {
+  color: #18122B;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.detection-items {
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detection-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background-color: #F9F8F6;
+  border-radius: 8px;
+  border-left: 3px solid #635985;
+}
+
+.detection-word {
+  font-weight: 600;
+  color: #18122B;
+}
+
+.detection-confidence {
+  font-weight: 600;
+  color: #443C68;
+  background-color: #EFE9E3;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}

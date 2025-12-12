@@ -261,17 +261,25 @@ async def websocket_detection_endpoint(websocket: WebSocket):
                     
             except json.JSONDecodeError:
                 # Send error but keep connection alive
-                await websocket.send_json({
-                    "error": "Invalid JSON format",
-                    "success": False
-                })
+                try:
+                    await websocket.send_json({
+                        "error": "Invalid JSON format",
+                        "success": False
+                    })
+                except Exception as send_error:
+                    print(f"Failed to send error message: {send_error}")
+                    break  # Connection closed, exit loop
             except Exception as e:
                 # Send error but keep connection alive
                 print(f"Error processing frame: {e}")
-                await websocket.send_json({
-                    "error": str(e),
-                    "success": False
-                })
+                try:
+                    await websocket.send_json({
+                        "error": str(e),
+                        "success": False
+                    })
+                except Exception as send_error:
+                    print(f"Failed to send error message: {send_error}")
+                    break  # Connection closed, exit loop
                 
     except WebSocketDisconnect:
         print("WebSocket client disconnected gracefully")
