@@ -3,16 +3,6 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
 
-class Blog(Base):
-    __tablename__ = "blogs"
-
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String)
-    body = Column(String)
-    user_id = Column(Integer, ForeignKey('users.id'))
-
-    creator = relationship("User", back_populates="blogs")
-
 class User(Base):
     __tablename__ = "users"
 
@@ -22,7 +12,6 @@ class User(Base):
     password = Column(String)
     total_detection_sessions = Column(Integer, default=0)  # Count all sessions (saved or not)
 
-    blogs = relationship("Blog", back_populates="creator")
     detection_histories = relationship("DetectionHistory", back_populates="user")
 
 class DetectionHistory(Base):
