@@ -173,6 +173,46 @@
   padding: 20px;
 }
 
+.connection-status {
+  background-color: white;
+  padding: 15px;
+  border-radius: 5px;
+  border: 1px solid #dee2e6;
+  margin-top: 10px;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.status-row label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.status-row input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.ws-status {
+  font-size: 0.9rem;
+  color: #495057;
+  padding: 5px 0;
+}
+
+.ws-error {
+  font-size: 0.85rem;
+  color: #dc3545;
+  margin-top: 5px;
+  padding: 5px;
+  background-color: #f8d7da;
+  border-radius: 3px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .webcam-layout {

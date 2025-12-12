@@ -1,10 +1,11 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException, status, Depends
+from fastapi import APIRouter, File, UploadFile, HTTPException, status, Depends, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from .. import jwt_token, models, schemas
 import cv2
 import numpy as np
 from ultralytics import YOLO
 import base64
+import json
 from pathlib import Path
 
 router = APIRouter(
@@ -191,3 +192,88 @@ async def predict_asl_sign(request: schemas.DetectionRequest, current_user: mode
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"ASL prediction failed: {str(e)}"
         )
+
+# WebSocket endpoint for real-time detection with lower latency
+@router.websocket("/ws")
+async def websocket_detection_endpoint(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time hand detection with minimal latency.
+    Maintains persistent connection for continuous frame processing.
+    Accepts base64 frames and returns detection results immediately.
+    """
+    await websocket.accept()
+    print("WebSocket client connected")
+    
+    try:
+        # Keep connection alive and process frames continuously
+        while True:
+            try:
+                # Receive base64 image data from client
+                data = await websocket.receive_text()
+                
+                # Parse JSON data
+                message = json.loads(data)
+                
+                # Check for authentication token
+                token = message.get("token")
+                if not token:
+                    await websocket.send_json({
+                        "error": "Authentication required",
+                        "success": False
+                    })
+                    continue
+                
+                # Get image data
+                base64_image = message.get("image")
+                if not base64_image:
+                    await websocket.send_json({
+                        "error": "No image data provided",
+                        "success": False
+                    })
+                    continue
+                
+                # Process the frame (non-blocking)
+                result = HandDetectionService.process_base64_frame(base64_image)
+                
+                if result["success"] and result["detections"]:
+                    # Get the highest confidence detection
+                    best_detection = max(result["detections"], key=lambda x: x["confidence"])
+                    
+                    prediction = f"Hand Gesture ({result['total_hands']} hands)"
+                    confidence = best_detection["confidence"]
+                    
+                    # Send detection results back to client
+                    await websocket.send_json({
+                        "prediction": prediction,
+                        "confidence": confidence,
+                        "total_hands": result["total_hands"],
+                        "detections": result["detections"],
+                        "success": True
+                    })
+                else:
+                    await websocket.send_json({
+                        "prediction": "No gesture detected",
+                        "confidence": 0.0,
+                        "total_hands": 0,
+                        "detections": [],
+                        "success": True
+                    })
+                    
+            except json.JSONDecodeError:
+                # Send error but keep connection alive
+                await websocket.send_json({
+                    "error": "Invalid JSON format",
+                    "success": False
+                })
+            except Exception as e:
+                # Send error but keep connection alive
+                print(f"Error processing frame: {e}")
+                await websocket.send_json({
+                    "error": str(e),
+                    "success": False
+                })
+                
+    except WebSocketDisconnect:
+        print("WebSocket client disconnected gracefully")
+    except Exception as e:
+        print(f"WebSocket connection error: {e}")

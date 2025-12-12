@@ -1,9 +1,10 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import Webcam from 'react-webcam';
 import apiService from '../services/apiService';
-import "./LiveDetectionInterface.css"; 
+import { useWebSocketDetection } from '../hooks/useWebSocketDetection';
+import './LiveDetectionInterface.css';
 
-const CAPTURE_INTERVAL = 300; // Gửi frame mỗi 300ms
+const CAPTURE_INTERVAL = 50; // Send frames every 50ms (20 FPS with WebSocket)
 
 const DetectionLog = ({ log }) => (
     <div className="detection-log">
@@ -34,48 +35,91 @@ const LiveDetectionInterface = () => {
     const [isDetecting, setIsDetecting] = useState(false);
     const [isCameraOn, setIsCameraOn] = useState(false);
     const [detections, setDetections] = useState([]);
+    const [useWebSocket, setUseWebSocket] = useState(true); // Toggle between WS and HTTP
     const isSending = useRef(false);
+
+    // WebSocket hook
+    const { 
+        connect: connectWS, 
+        disconnect: disconnectWS, 
+        sendFrame, 
+        setOnMessage, 
+        isConnected: wsConnected,
+        error: wsError 
+    } = useWebSocketDetection();
+
+    // Handle WebSocket messages
+    useEffect(() => {
+        setOnMessage((data) => {
+            if (data.success) {
+                const { prediction, confidence, detections: apiDetections } = data;
+
+                // Update detections for bounding box drawing
+                setDetections(apiDetections || []);
+
+                if (confidence && confidence > 0.7 && prediction && prediction !== detectionLog[0]?.word) {
+                    setDetectionLog(prevLog => [{ word: prediction, confidence }, ...prevLog]);
+                }
+
+                setTranslatedText(prediction || "Can't Detect");
+                setConfidence(confidence || 0);
+            } else if (data.error) {
+                console.error('Detection error:', data.error);
+                setTranslatedText(`Error: ${data.error}`);
+            }
+
+            isSending.current = false;
+        });
+    }, [setOnMessage, detectionLog]);
 
     // Hàm xử lý chụp và gửi frame
     const captureAndSend = useCallback(async () => {
-        if (!isDetecting || isSending.current || !webcamRef.current) return;
+        if (!isDetecting || !webcamRef.current) return;
+        
+        // Block only for HTTP requests, not for WebSocket
+        if (!useWebSocket && isSending.current) return;
         
         const imageSrc = webcamRef.current.getScreenshot(); 
         if (!imageSrc) return; 
 
         try {
-            isSending.current = true;
-            
             // Remove data URL prefix for API (data:image/jpeg;base64,...)
             const base64Data = imageSrc.split(',')[1];
             
-            // Use the new predict endpoint
-            const data = await apiService.request('/detection/predict', {
-                method: 'POST',
-                body: JSON.stringify({ image: base64Data }),
-            });
+            if (useWebSocket && wsConnected) {
+                // WebSocket: Send frames continuously without blocking
+                // Backend will process them as fast as it can
+                sendFrame(base64Data);
+            } else {
+                // HTTP: Wait for each response before sending next frame
+                isSending.current = true;
+                
+                const data = await apiService.request('/detection/predict', {
+                    method: 'POST',
+                    body: JSON.stringify({ image: base64Data }),
+                });
 
-            // Now we get prediction, confidence, and detections from the API
-            const { prediction, confidence, detections: apiDetections } = data;
+                const { prediction, confidence, detections: apiDetections } = data;
 
-            // Update detections for bounding box drawing
-            setDetections(apiDetections || []);
+                setDetections(apiDetections || []);
 
-            if (confidence && confidence > 0.7 && prediction && prediction !== detectionLog[0]?.word) {
-                setDetectionLog(prevLog => [{ word: prediction, confidence }, ...prevLog]);
+                if (confidence && confidence > 0.7 && prediction && prediction !== detectionLog[0]?.word) {
+                    setDetectionLog(prevLog => [{ word: prediction, confidence }, ...prevLog]);
+                }
+
+                setTranslatedText(prediction || "Can't Detect");
+                setConfidence(confidence || 0);
+                
+                isSending.current = false;
             }
-
-            setTranslatedText(prediction || "Can't Detect");
-            setConfidence(confidence || 0);
             
         } catch (error) {
             console.error('Detection error:', error);
             setTranslatedText(`Error: ${error.message}`);
             setConfidence(0);
-        } finally {
             isSending.current = false;
         }
-    }, [isDetecting, detectionLog]);
+    }, [isDetecting, detectionLog, useWebSocket, wsConnected, sendFrame]);
 
     useEffect(() => {
         let intervalId;
@@ -87,6 +131,10 @@ const LiveDetectionInterface = () => {
 
     const handleStartStop = () => {
         if (!isDetecting) {
+            // Connect WebSocket when starting detection
+            if (useWebSocket && !wsConnected) {
+                connectWS();
+            }
             setTranslatedText("Start Detecting");
             setDetectionLog([]);
         } else {
@@ -102,6 +150,11 @@ const LiveDetectionInterface = () => {
             setIsCameraOn(false);
             setDetections([]);
             setTranslatedText("Camera Off");
+            
+            // Disconnect WebSocket
+            if (wsConnected) {
+                disconnectWS();
+            }
         } else {
             setIsCameraOn(true);
             setTranslatedText("Camera On - Ready to detect");
@@ -249,6 +302,36 @@ const LiveDetectionInterface = () => {
                         >
                             Save Log
                         </button>
+                    </div>
+
+                    {/* Connection Status */}
+                    <div className="connection-status">
+                        <div className="status-row">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    checked={useWebSocket}
+                                    onChange={(e) => setUseWebSocket(e.target.checked)}
+                                    disabled={isDetecting}
+                                />
+                                <span style={{ marginLeft: '8px' }}>Use WebSocket (Lower Latency)</span>
+                            </label>
+                        </div>
+                        {useWebSocket && (
+                            <div className="ws-status">
+                                Status: <span style={{ 
+                                    color: wsConnected ? 'green' : 'red',
+                                    fontWeight: 'bold'
+                                }}>
+                                    {wsConnected ? '● Connected' : '○ Disconnected'}
+                                </span>
+                            </div>
+                        )}
+                        {wsError && (
+                            <div className="ws-error">
+                                Error: {wsError}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
