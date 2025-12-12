@@ -10,16 +10,12 @@ router = APIRouter(
     tags=['Detection History']
 )
 
-# Increment session counter when user stops detection (regardless of save)
+# Increment total detection sessions counter. Called when user stops detection (whether they save or not)
 @router.post("/increment-session")
 async def increment_detection_session(
     current_user: models.User = Depends(jwt_token.get_current_user),
     db: Session = Depends(database.get_db)
 ):
-    """
-    Increment total detection sessions counter
-    Called when user stops detection (whether they save or not)
-    """
     try:
         print(f"Incrementing session for user {current_user.email}")
         print(f"Current sessions: {current_user.total_detection_sessions}")
@@ -39,16 +35,13 @@ async def increment_detection_session(
             detail=f"Failed to increment session counter: {str(e)}"
         )
 
-# Save detection history
+# Save detection session history to database
 @router.post("/save", response_model=schemas.DetectionHistoryResponse)
 async def save_detection_history(
     request: schemas.SaveDetectionHistoryRequest,
     current_user: models.User = Depends(jwt_token.get_current_user),
     db: Session = Depends(database.get_db)
 ):
-    """
-    Save detection session history to database
-    """
     try:
         # Convert detections list to JSON string
         detections_json = json.dumps([{
@@ -90,9 +83,6 @@ async def get_detection_history(
     db: Session = Depends(database.get_db),
     limit: int = 50
 ):
-    """
-    Get all detection history for current user
-    """
     try:
         histories = db.query(models.DetectionHistory)\
             .filter(models.DetectionHistory.user_id == current_user.id)\
@@ -125,16 +115,12 @@ async def get_detection_history_by_id(
     current_user: models.User = Depends(jwt_token.get_current_user),
     db: Session = Depends(database.get_db)
 ):
-    """
-    Get specific detection history by ID
-    """
     try:
         history = db.query(models.DetectionHistory)\
             .filter(
                 models.DetectionHistory.id == history_id,
                 models.DetectionHistory.user_id == current_user.id
-            )\
-            .first()
+            ).first()
         
         if not history:
             raise HTTPException(
@@ -165,16 +151,12 @@ async def delete_detection_history(
     current_user: models.User = Depends(jwt_token.get_current_user),
     db: Session = Depends(database.get_db)
 ):
-    """
-    Delete specific detection history
-    """
     try:
         history = db.query(models.DetectionHistory)\
             .filter(
                 models.DetectionHistory.id == history_id,
                 models.DetectionHistory.user_id == current_user.id
-            )\
-            .first()
+            ).first()
         
         if not history:
             raise HTTPException(

@@ -126,9 +126,6 @@ async def detect_hands_from_upload(
     file: UploadFile = File(...),
     current_user: models.User = Depends(jwt_token.get_current_user)
 ):
-    """
-    Detect hands in uploaded image file
-    """
     # Validate file type
     if not file.content_type.startswith('image/'):
         raise HTTPException(
@@ -154,14 +151,10 @@ async def detect_hands_from_upload(
 # ASL Prediction endpoint (compatible with LiveDetectionInterface)
 @router.post("/predict", response_model=schemas.ASLPredictionResponse)
 async def predict_asl_sign(request: schemas.DetectionRequest, current_user: models.User = Depends(jwt_token.get_current_user)):
-    """
-    ASL Sign prediction endpoint - returns prediction and confidence format
-    Compatible with LiveDetectionInterface component
-    """
     try:
         base64_data = request.image
         
-        # Process the frame using existing detection service
+        # Process the frame
         result = HandDetectionService.process_base64_frame(base64_data)
         
         if result["success"] and result["detections"]:
@@ -169,7 +162,6 @@ async def predict_asl_sign(request: schemas.DetectionRequest, current_user: mode
             best_detection = max(result["detections"], key=lambda x: x["confidence"])
             
             # For now, return generic hand detection result
-            # TODO: Replace with actual ASL sign classification
             prediction = f"Hand Gesture ({result['total_hands']} hands)"
             confidence = best_detection["confidence"]
             
@@ -193,14 +185,9 @@ async def predict_asl_sign(request: schemas.DetectionRequest, current_user: mode
             detail=f"ASL prediction failed: {str(e)}"
         )
 
-# WebSocket endpoint for real-time detection with lower latency
+# WebSocket endpoint for real-time detection with lower latency. Maintains persistent connection for continuous frame processing.
 @router.websocket("/ws")
 async def websocket_detection_endpoint(websocket: WebSocket):
-    """
-    WebSocket endpoint for real-time hand detection with minimal latency.
-    Maintains persistent connection for continuous frame processing.
-    Accepts base64 frames and returns detection results immediately.
-    """
     await websocket.accept()
     print("WebSocket client connected")
     

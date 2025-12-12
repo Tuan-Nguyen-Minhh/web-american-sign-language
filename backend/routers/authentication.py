@@ -9,13 +9,13 @@ router = APIRouter(
     tags=['Authentication']
 )
 
+# Login endpoint - accepts form data (OAuth2)
 @router.post('/login', response_model=schemas.LoginResponse)
 def login(
     request: Annotated[OAuth2PasswordRequestForm, Depends()], 
     db: Session = Depends(database.get_db)
 ):
-    """Login endpoint - accepts form data (OAuth2)"""
-    print(f"Login attempt for: {request.username}")  # Debug
+    print(f"Login attempt for: {request.username}") 
     
     # Try to find user by email or username
     user = db.query(models.User).filter(
@@ -23,20 +23,20 @@ def login(
     ).first()
     
     if not user:
-        print(f"User not found: {request.username}")  # Debug
+        print(f"User not found: {request.username}") 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, 
             detail='Invalid credentials'
         )
     
     if not token.verify_password(request.password, user.password):
-        print(f"Invalid password for: {request.username}")  # Debug
+        print(f"Invalid password for: {request.username}") 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, 
             detail='Invalid credentials'
         )
     
-    print(f"Login successful for: {user.name}")  # Debug
+    print(f"Login successful for: {user.name}") 
     
     access_token = token.create_access_token(data={
         "sub": user.email,
@@ -54,14 +54,10 @@ def login(
         }
     }
 
-
+# Register endpoint - register new user
 @router.post('/register', status_code=status.HTTP_201_CREATED, response_model=schemas.ShowUser)
 def register(request: schemas.UserCreate, db: Session = Depends(database.get_db)):
-    """
-    Register new user
-    Accepts: { "username": "...", "email": "...", "password": "..." }
-    """
-    print(f"Registration attempt: username={request.username}, email={request.email}")  # Debug
+    print(f"Registration attempt: username={request.username}, email={request.email}")
     
     # Check if user already exists
     existing_user = db.query(models.User).filter(
@@ -70,22 +66,21 @@ def register(request: schemas.UserCreate, db: Session = Depends(database.get_db)
     
     if existing_user:
         if existing_user.email == request.email:
-            print(f"Email already exists: {request.email}")  # Debug
+            print(f"Email already exists: {request.email}")  
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail='Email already registered'
             )
         else:
-            print(f"Username already exists: {request.username}")  # Debug
+            print(f"Username already exists: {request.username}") 
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail='Username already taken'
             )
     
     # Create new user
-    # IMPORTANT: Map "username" from frontend to "name" in database
     new_user = models.User(
-        name=request.username,  # Frontend sends "username", DB expects "name"
+        name=request.username, 
         email=request.email,
         password=token.hash_password(request.password)
     )
@@ -94,12 +89,11 @@ def register(request: schemas.UserCreate, db: Session = Depends(database.get_db)
     db.commit()
     db.refresh(new_user)
     
-    print(f"User created successfully: {new_user.name} (ID: {new_user.id})")  # Debug
+    print(f"User created successfully: {new_user.name} (ID: {new_user.id})")  
     
     return new_user
 
-
+# Get current logged-in user information
 @router.get('/me', response_model=schemas.ShowUser)
 def get_current_user_info(current_user: models.User = Depends(token.get_current_user)):
-    """Get current logged-in user information"""
     return current_user
