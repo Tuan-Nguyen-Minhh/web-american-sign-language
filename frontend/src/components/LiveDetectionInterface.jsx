@@ -36,6 +36,7 @@ const LiveDetectionInterface = () => {
     const [isCameraOn, setIsCameraOn] = useState(false);
     const [detections, setDetections] = useState([]);
     const [useWebSocket, setUseWebSocket] = useState(true); // Toggle between WS and HTTP
+    const [isSpeaking, setIsSpeaking] = useState(false);
     const isSending = useRef(false);
 
     // WebSocket hook
@@ -47,6 +48,59 @@ const LiveDetectionInterface = () => {
         isConnected: wsConnected,
         error: wsError 
     } = useWebSocketDetection();
+
+    // Text-to-Speech function using free Browser Web Speech API
+    const speakText = useCallback((text, confidenceValue) => {
+        // Check if browser supports speech synthesis
+        if (!('speechSynthesis' in window)) {
+            alert('Your browser does not support text-to-speech');
+            return;
+        }
+
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
+
+        // Skip if text is empty or error message
+        if (!text || text.includes('Error') || text === "Can't Detect" || text === "No gesture detected" || text === "Ready" || text === "Camera Off") {
+            return;
+        }
+
+        // Build comprehensive speech text with all information
+        let speechText = text;
+        
+        // Add confidence information if available
+        if (confidenceValue && confidenceValue > 0) {
+            const confidencePercent = Math.round(confidenceValue * 100);
+            speechText += ` with ${confidencePercent} percent confidence`;
+        }
+
+        // Create speech utterance
+        const utterance = new SpeechSynthesisUtterance(speechText);
+        utterance.rate = 1.0; // Speed (0.1 to 10)
+        utterance.pitch = 1.0; // Pitch (0 to 2)
+        utterance.volume = 1.0; // Volume (0 to 1)
+        utterance.lang = 'en-US'; // Language
+
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+
+        // Speak the text
+        window.speechSynthesis.speak(utterance);
+    }, []);
+
+    // Helper function to speak button actions
+    const speakButtonAction = useCallback((actionText) => {
+        if (!('speechSynthesis' in window)) return;
+        
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(actionText);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+    }, []);
 
     // Handle WebSocket messages
     useEffect(() => {
@@ -137,8 +191,10 @@ const LiveDetectionInterface = () => {
             }
             setTranslatedText("Start Detecting");
             setDetectionLog([]);
+            speakButtonAction("Starting detection");
         } else {
             setTranslatedText("Detection Stopped");
+            speakButtonAction("Detection stopped");
         }
         setIsDetecting(prev => !prev);
     };
@@ -149,7 +205,10 @@ const LiveDetectionInterface = () => {
             setIsDetecting(false);
             setIsCameraOn(false);
             setDetections([]);
+            setDetectionLog([]); // Clear history when turning off camera
             setTranslatedText("Camera Off");
+            setConfidence(0); // Reset confidence
+            speakButtonAction("Camera turned off");
             
             // Disconnect WebSocket
             if (wsConnected) {
@@ -157,7 +216,8 @@ const LiveDetectionInterface = () => {
             }
         } else {
             setIsCameraOn(true);
-            setTranslatedText("Camera On - Ready to detect");
+            setTranslatedText("Ready to detect");
+            speakButtonAction("Camera turned on");
         }
     };
 
@@ -221,6 +281,7 @@ const LiveDetectionInterface = () => {
         document.body.appendChild(element); 
         element.click();
         
+        speakButtonAction(`Saved ${detectionLog.length} detections to file`);
         alert(`Đã lưu ${detectionLog.length} từ vào file "asl_detection_log.txt"`);
     };
 
@@ -293,6 +354,19 @@ const LiveDetectionInterface = () => {
                                 {isDetecting ? 'Stop Detection' : 'Start Detection'}
                             </button>
                         )}
+                        
+                        <button 
+                            className="btn-control speak"
+                            onClick={() => speakText(translatedText, confidence)}
+                            disabled={isDetecting || !translatedText || translatedText === "Ready" || translatedText === "Camera Off" || translatedText === "Detection Stopped" || translatedText === "Start Detecting" || isSpeaking}
+                            style={{ 
+                                backgroundColor: isSpeaking ? '#17a2b8' : '#6f42c1', 
+                                color: 'white',
+                                opacity: (isDetecting || !translatedText || translatedText === "Ready" || translatedText === "Camera Off" || translatedText === "Detection Stopped" || translatedText === "Start Detecting") ? 0.5 : 1
+                            }}
+                        >
+                            {isSpeaking ? '🔊 Speaking...' : '🔊 Speak'}
+                        </button>
                         
                         <button 
                             className="btn-control save"
