@@ -4,7 +4,7 @@ import apiService from '../services/apiService';
 import { useWebSocketDetection } from '../hooks/useWebSocketDetection';
 import './LiveDetectionInterface.css';
 
-const CAPTURE_INTERVAL = 50; // Send frames every 50ms (20 FPS with WebSocket)
+const CAPTURE_INTERVAL = 25; // Send frames every 50ms (20 FPS with WebSocket)
 
 const DetectionLog = ({ log }) => (
     <div className="detection-log">
@@ -31,6 +31,8 @@ const LiveDetectionInterface = () => {
     const canvasRef = useRef(null);
     const [translatedText, setTranslatedText] = useState("Ready");
     const [confidence, setConfidence] = useState(0);
+    const [lastDetectedText, setLastDetectedText] = useState(""); // Store last valid detection
+    const [lastDetectedConfidence, setLastDetectedConfidence] = useState(0);
     const [detectionLog, setDetectionLog] = useState([]);
     const [isDetecting, setIsDetecting] = useState(false);
     const [isCameraOn, setIsCameraOn] = useState(false);
@@ -117,6 +119,12 @@ const LiveDetectionInterface = () => {
 
                 setTranslatedText(prediction || "Can't Detect");
                 setConfidence(confidence || 0);
+                
+                // Store last valid detection for speaking after stopping
+                if (prediction && confidence > 0 && prediction !== "No gesture detected" && prediction !== "Can't Detect") {
+                    setLastDetectedText(prediction);
+                    setLastDetectedConfidence(confidence);
+                }
             } else if (data.error) {
                 console.error('Detection error:', data.error);
                 setTranslatedText(`Error: ${data.error}`);
@@ -163,6 +171,12 @@ const LiveDetectionInterface = () => {
 
                 setTranslatedText(prediction || "Can't Detect");
                 setConfidence(confidence || 0);
+                
+                // Store last valid detection for speaking after stopping
+                if (prediction && confidence > 0 && prediction !== "No gesture detected" && prediction !== "Can't Detect") {
+                    setLastDetectedText(prediction);
+                    setLastDetectedConfidence(confidence);
+                }
                 
                 isSending.current = false;
             }
@@ -376,12 +390,12 @@ const LiveDetectionInterface = () => {
                         
                         <button 
                             className="btn-control speak"
-                            onClick={() => speakText(translatedText, confidence)}
-                            disabled={isDetecting || !translatedText || translatedText === "Ready" || translatedText === "Camera Off" || translatedText === "Detection Stopped" || translatedText === "Start Detecting" || isSpeaking}
+                            onClick={() => speakText(lastDetectedText || translatedText, lastDetectedConfidence || confidence)}
+                            disabled={isDetecting || isSpeaking || !lastDetectedText}
                             style={{ 
                                 backgroundColor: isSpeaking ? '#17a2b8' : '#6f42c1', 
                                 color: 'white',
-                                opacity: (isDetecting || !translatedText || translatedText === "Ready" || translatedText === "Camera Off" || translatedText === "Detection Stopped" || translatedText === "Start Detecting") ? 0.5 : 1
+                                opacity: (isDetecting || isSpeaking || !lastDetectedText) ? 0.5 : 1
                             }}
                         >
                             {isSpeaking ? '🔊 Speaking...' : '🔊 Speak'}
