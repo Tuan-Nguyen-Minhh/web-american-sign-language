@@ -1,9 +1,10 @@
 import Header from "./components/header/Header";
 import Footer from "./components/footer/Footer";
-import React, { useState, useEffect } from "react"; 
+import React, { useState, useEffect } from "react";
 import About from "./components/about/About";
 import Home from "./components/Home";
-import Profile from "./components/profile/Profile"; 
+import Profile from "./components/profile/Profile";
+import Contribute from "./components/contribute/Contribute";
 import {
   BrowserRouter as Router,
   Routes,
@@ -29,24 +30,24 @@ function AppContent() {
   const isLoginPage = location.pathname === "/login";
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
-    return savedTheme === 'dark';
+    const savedTheme = localStorage.getItem("theme");
+    return savedTheme === "dark";
   });
 
   useEffect(() => {
     const root = document.documentElement;
     if (isDarkMode) {
-      root.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
+      root.classList.add("dark");
+      localStorage.setItem("theme", "dark");
     } else {
-      root.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
+      root.classList.remove("dark");
+      localStorage.setItem("theme", "light");
     }
   }, [isDarkMode]);
 
   // 3. Hàm toggle để truyền xuống Header
   const toggleTheme = () => {
-    setIsDarkMode(prev => !prev);
+    setIsDarkMode((prev) => !prev);
   };
   // ---------------------------------------------
 
@@ -80,7 +81,7 @@ function AppContent() {
             path="/contribute"
             element={
               <ProtectedRoute>
-                <div>Contribute Page</div>
+                <Contribute />
               </ProtectedRoute>
             }
           />

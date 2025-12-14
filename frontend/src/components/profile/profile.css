@@ -1,17 +1,73 @@
+:root {
+  /* --- BẢNG MÀU GỐC (LIGHT MODE) --- */
+  /* Background colors - Beige Palette */
+  --bg-light: #F9F8F6;
+  --bg-medium: #EFE9E3;
+  --bg-dark: #D9CFC7;
+  --bg-darker: #C9B59C;
+
+  /* Text & Accent Colors */
+  --primary-color: #635985;
+  /* Tím đậm (Màu chính) */
+  --hover-color: #443C68;
+  --text-primary: #18122B;
+  /* Đổi tên --text-dark thành --text-primary để dễ quản lý */
+  --text-secondary: #393053;
+
+  /* Utility colors */
+  --border-color: #D9CFC7;
+  --dark-border-color: #C9B59C;
+  --shadow-color: rgba(24, 18, 43, 0.1);
+  --hover-shadow-color: rgba(24, 18, 43, 0.2);
+  --card-bg: #FFFFFF;
+
+  /* Layout variables */
+  --padding-x: 24px;
+  --padding-y: 16px;
+  --font-family: "Josefin Sans", sans-serif;
+  --font-weight-bold: 700;
+  --font-size-lg: 1.125rem;
+}
+
+
+.dark {
+  /* Ghi đè màu nền sang tối */
+  --bg-light: #181818;
+  --bg-medium: #222222;
+  --bg-dark: #333333;
+  --bg-darker: #4a4a4a;
+
+  /* Ghi đè màu Card */
+  --card-bg: #2a2a2a;
+  --border-color: #444;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+
+  /* Ghi đè màu chữ sang sáng (FIX LỖI KHÓ NHÌN) */
+  --text-primary: #F0F0F0;
+  /* Trắng xám */
+  --text-secondary: #B0B0B0;
+
+  /* Ghi đè màu Link/Primary sang màu sáng để tương phản */
+  --primary-color: #D4C9FF;
+  /* Tím phấn sáng */
+  --hover-color: #FFFFFF;
+  /* Trắng tinh khi hover */
+}
+
 .profile-container {
   min-height: 100vh;
-  background-color: #F9F8F6;
+  background-color: var(--bg-light);
   padding: 24px;
-  font-family: "Josefin Sans", sans-serif;
+  font-family: var(--font-family);
 }
 
 /* Header Styles */
 .profile-header {
-  background-color: #FFFFFF;
+  background-color: var(--card-bg);
   border-radius: 16px;
   padding: 32px;
   margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(24, 18, 43, 0.1);
+  box-shadow: 0 2px 8px var(--shadow-color);
 }
 
 .header-content {
@@ -32,11 +88,11 @@
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background-color: #635985;
+  background-color: var(--primary-color);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 4px solid #EFE9E3;
+  border: 4px solid var(--bg-medium);
 }
 
 .avatar-icon {
@@ -52,20 +108,20 @@
 
 .user-name {
   font-size: 32px;
-  font-weight: 700;
-  color: #18122B;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
   margin: 0;
 }
 
 .user-email {
   font-size: 16px;
-  color: #393053;
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .join-date {
   font-size: 14px;
-  color: #635985;
+  color: var(--primary-color);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -73,7 +129,7 @@
 }
 
 .logout-btn {
-  background-color: #635985;
+  background-color: var(--primary-color);
   color: #FFFFFF;
   border: none;
   border-radius: 8px;
@@ -89,7 +145,7 @@
 }
 
 .logout-btn:hover {
-  background-color: #443C68;
+  background-color: var(--hover-color);
   transform: translateY(-2px);
 }
 
@@ -102,31 +158,31 @@
 }
 
 .stat-card {
-  background-color: #FFFFFF;
+  background-color: var(--card-bg);
   border-radius: 12px;
   padding: 24px;
   display: flex;
   align-items: center;
   gap: 20px;
-  box-shadow: 0 2px 8px rgba(24, 18, 43, 0.1);
+  box-shadow: 0 2px 8px var(--shadow-color);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .stat-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(24, 18, 43, 0.15);
+  box-shadow: 0 4px 16px var(--hover-shadow-color);
 }
 
 .stat-icon {
   width: 60px;
   height: 60px;
   border-radius: 12px;
-  background-color: #EFE9E3;
+  background-color: var(--bg-medium);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 28px;
-  color: #635985;
+  color: var(--primary-color);
 }
 
 .stat-info {
@@ -135,23 +191,23 @@
 
 .stat-number {
   font-size: 36px;
-  font-weight: 700;
-  color: #18122B;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
   margin: 0;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #393053;
+  color: var(--text-secondary);
   margin: 4px 0 0 0;
 }
 
 /* History Section Styles */
 .history-section {
-  background-color: #FFFFFF;
+  background-color: var(--card-bg);
   border-radius: 16px;
   padding: 32px;
-  box-shadow: 0 2px 8px rgba(24, 18, 43, 0.1);
+  box-shadow: 0 2px 8px var(--shadow-color);
 }
 
 .section-header {
@@ -160,8 +216,8 @@
 
 .section-title {
   font-size: 28px;
-  font-weight: 700;
-  color: #18122B;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
   margin: 0 0 8px 0;
   display: flex;
   align-items: center;
@@ -170,7 +226,7 @@
 
 .section-subtitle {
   font-size: 14px;
-  color: #393053;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -182,17 +238,17 @@
 }
 
 .history-card {
-  background-color: #F9F8F6;
+  background-color: var(--bg-light);
   border-radius: 12px;
   padding: 20px;
-  border: 2px solid #EFE9E3;
+  border: 2px solid var(--border-color);
   transition: all 0.3s ease;
 }
 
 .history-card:hover {
-  border-color: #635985;
+  border-color: var(--primary-color);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(24, 18, 43, 0.1);
+  box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .card-header {
@@ -206,7 +262,7 @@
   width: 60px;
   height: 60px;
   border-radius: 12px;
-  background-color: #635985;
+  background-color: var(--primary-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -214,14 +270,14 @@
 
 .letter {
   font-size: 32px;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   color: #FFFFFF;
 }
 
 .delete-btn {
   background-color: transparent;
   border: none;
-  color: #393053;
+  color: var(--text-secondary);
   font-size: 18px;
   cursor: pointer;
   padding: 8px;
@@ -249,17 +305,17 @@
 
 .label {
   font-size: 14px;
-  color: #393053;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
 .value {
   font-size: 14px;
-  color: #18122B;
+  color: var(--text-primary);
 }
 
 .confidence-badge {
-  background-color: #635985;
+  background-color: var(--primary-color);
   color: #FFFFFF;
   padding: 4px 12px;
   border-radius: 12px;
@@ -271,12 +327,12 @@
   display: flex;
   gap: 8px;
   padding-top: 12px;
-  border-top: 1px solid #EFE9E3;
+  border-top: 1px solid var(--border-color);
 }
 
 .action-btn {
   flex: 1;
-  background-color: #635985;
+  background-color: var(--primary-color);
   color: #FFFFFF;
   border: none;
   border-radius: 8px;
@@ -293,7 +349,7 @@
 }
 
 .action-btn:hover {
-  background-color: #443C68;
+  background-color: var(--hover-color);
   transform: translateY(-1px);
 }
 
@@ -305,20 +361,20 @@
 
 .empty-icon {
   font-size: 64px;
-  color: #D9CFC7;
+  color: var(--border-color);
   margin-bottom: 16px;
 }
 
 .empty-text {
   font-size: 20px;
   font-weight: 600;
-  color: #18122B;
+  color: var(--text-primary);
   margin: 0 0 8px 0;
 }
 
 .empty-subtext {
   font-size: 14px;
-  color: #393053;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -338,7 +394,7 @@
 }
 
 .modal-content {
-  background-color: #FFFFFF;
+  background-color: var(--card-bg);
   border-radius: 16px;
   max-width: 600px;
   width: 100%;
@@ -351,13 +407,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 24px;
-  border-bottom: 2px solid #EFE9E3;
+  border-bottom: 2px solid var(--border-color);
 }
 
 .modal-title {
   font-size: 24px;
-  font-weight: 700;
-  color: #18122B;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -365,7 +421,7 @@
   background-color: transparent;
   border: none;
   font-size: 28px;
-  color: #393053;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 4px 8px;
   line-height: 1;
@@ -373,12 +429,12 @@
 }
 
 .close-btn:hover {
-  color: #18122B;
+  color: var(--text-primary);
 }
 
 .video-container {
   padding: 32px;
-  background-color: #F9F8F6;
+  background-color: var(--bg-light);
   min-height: 300px;
   display: flex;
   align-items: center;
@@ -387,18 +443,18 @@
 
 .video-placeholder {
   text-align: center;
-  color: #393053;
+  color: var(--text-secondary);
   font-size: 16px;
 }
 
 .modal-footer {
   padding: 24px;
-  border-top: 2px solid #EFE9E3;
+  border-top: 2px solid var(--border-color);
 }
 
 .modal-info {
   font-size: 14px;
-  color: #393053;
+  color: var(--text-secondary);
   margin: 0;
   text-align: center;
 }
@@ -541,4 +597,3 @@
     flex: 1;
   }
 }
-

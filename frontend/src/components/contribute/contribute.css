@@ -1,0 +1,301 @@
+:root {
+  /* --- BẢNG MÀU GỐC (LIGHT MODE) --- */
+  /* Background colors - Beige Palette */
+  --bg-light: #F9F8F6;
+  --bg-medium: #EFE9E3;
+  --bg-dark: #D9CFC7;
+  --bg-darker: #C9B59C;
+
+  /* Text & Accent Colors */
+  --primary-color: #635985;
+  /* Tím đậm (Màu chính) */
+  --hover-color: #443C68;
+  --text-primary: #18122B;
+  /* Đổi tên --text-dark thành --text-primary để dễ quản lý */
+  --text-secondary: #393053;
+
+  /* Utility colors */
+  --border-color: #D9CFC7;
+  --dark-border-color: #C9B59C;
+  --shadow-color: rgba(24, 18, 43, 0.1);
+  --hover-shadow-color: rgba(24, 18, 43, 0.2);
+  --card-bg: #FFFFFF;
+
+  /* Layout variables */
+  --padding-x: 24px;
+  --padding-y: 16px;
+  --font-family: "Josefin Sans", sans-serif;
+  --font-weight-bold: 700;
+  --font-size-lg: 1.125rem;
+}
+
+
+.dark {
+  /* Ghi đè màu nền sang tối */
+  --bg-light: #181818;
+  --bg-medium: #222222;
+  --bg-dark: #333333;
+  --bg-darker: #4a4a4a;
+
+  /* Ghi đè màu Card */
+  --card-bg: #2a2a2a;
+  --border-color: #444;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+
+  /* Ghi đè màu chữ sang sáng (FIX LỖI KHÓ NHÌN) */
+  --text-primary: #F0F0F0;
+  /* Trắng xám */
+  --text-secondary: #B0B0B0;
+
+  /* Ghi đè màu Link/Primary sang màu sáng để tương phản */
+  --primary-color: #D4C9FF;
+  /* Tím phấn sáng */
+  --hover-color: #FFFFFF;
+  /* Trắng tinh khi hover */
+}
+
+.contribute-container {
+  min-height: 100vh;
+  background-color: var(--bg-light);
+  padding: 80px 60px;
+  font-family: var(--font-family);
+}
+
+.contribute-content {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Header Section */
+.contribute-header {
+  margin-bottom: 80px;
+}
+
+.contribute-title {
+  font-size: 3.5rem;
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 24px;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.contribute-description {
+  font-size: 1.25rem;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  max-width: 900px;
+  margin-bottom: 32px;
+}
+
+
+/* Cards Section */
+.contribute-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 32px;
+}
+
+.contribute-card {
+  background-color: var(--bg-medium,0.03);
+  border: 1px solid var(--bg-dark,0.1);
+  border-radius: 16px;
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.contribute-card:hover {
+  background-color: var(--bg-dark,0.01);
+  border-color: var(--bg-darker,0.3);
+  transform: translateY(-4px);
+}
+
+/* Card Icon and Title */
+.card-icon-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.card-icon {
+  font-size: 1.8rem;
+  color: var(--text-primary,0.7);
+}
+
+.card-title {
+  font-size: 1.8rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Card Content */
+.card-subtitle {
+  font-size: 1rem;
+  color: var(--text-secondary,0.6);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.card-description {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--text-secondary,0.75);
+  margin-bottom: 32px;
+  flex-grow: 1;
+}
+
+/* Card Button */
+.card-button {
+  display: inline-block;
+  padding: 12px 24px;
+  background-color: transparent;
+  border: none;
+  color: var(--primary-color);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+}
+
+.card-button::after {
+  content: "";
+  position: absolute;
+  bottom: 8px;
+  left: 24px;
+  right: 24px;
+  height: 2px;
+  background-color: #a78bfa;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.card-button:hover {
+  color: #c4b5fd;
+}
+
+.card-button:hover::after {
+  transform: scaleX(1);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .contribute-container {
+    padding: 60px 40px;
+  }
+
+  .contribute-title {
+    font-size: 2.8rem;
+  }
+
+  .contribute-description {
+    font-size: 1.15rem;
+  }
+
+  .contribute-cards {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .contribute-container {
+    padding: 50px 24px;
+  }
+
+  .contribute-header {
+    margin-bottom: 60px;
+  }
+
+  .contribute-title {
+    font-size: 2.2rem;
+  }
+
+  .contribute-description {
+    font-size: 1.05rem;
+  }
+
+  .contribute-card {
+    padding: 32px 24px;
+  }
+
+  .card-title {
+    font-size: 1.5rem;
+  }
+
+  .card-icon {
+    font-size: 1.5rem;
+  }
+
+  .card-description {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .contribute-container {
+    padding: 40px 20px;
+  }
+
+  .contribute-title {
+    font-size: 1.8rem;
+  }
+
+  .contribute-description {
+    font-size: 1rem;
+  }
+
+  .github-star-button {
+    font-size: 0.85rem;
+  }
+
+  .star-icon {
+    font-size: 0.9rem;
+    margin-left: 10px;
+  }
+
+  .star-text,
+  .star-count {
+    padding: 6px 10px;
+  }
+
+  .contribute-card {
+    padding: 28px 20px;
+  }
+
+  .card-icon-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .card-title {
+    font-size: 1.4rem;
+  }
+
+  .card-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .card-description {
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+  }
+
+  .card-button {
+    padding: 10px 20px;
+    font-size: 0.85rem;
+  }
+
+  .card-button::after {
+    left: 20px;
+    right: 20px;
+  }
+}
