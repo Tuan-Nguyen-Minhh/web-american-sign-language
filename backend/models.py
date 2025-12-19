@@ -1,7 +1,12 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, Enum
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
+import enum
+
+class UserRole(str, enum.Enum):
+    ADMIN = "admin"
+    USER = "user"
 
 class User(Base):
     __tablename__ = "users"
@@ -10,6 +15,7 @@ class User(Base):
     name = Column(String)
     email = Column(String)
     password = Column(String)
+    role = Column(Enum(UserRole), default=UserRole.USER)  # Role: admin or user
     total_detection_sessions = Column(Integer, default=0)  # Count all sessions (saved or not)
 
     detection_histories = relationship("DetectionHistory", back_populates="user")

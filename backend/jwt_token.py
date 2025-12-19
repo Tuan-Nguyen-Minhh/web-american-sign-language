@@ -39,10 +39,11 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotate
         email: str = payload.get("sub")
         user_id: int = payload.get("user_id")
         name: str = payload.get("name")
+        role: str = payload.get("role")
 
         if email is None:
             raise credentials_exception
-        token_data = schemas.TokenData(email=email, user_id=user_id, name=name)
+        token_data = schemas.TokenData(email=email, user_id=user_id, name=name, role=role)
 
     except InvalidTokenError:
         raise credentials_exception
@@ -52,3 +53,23 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotate
         raise credentials_exception
     
     return user
+
+# Dependency to get current admin user
+def get_current_admin_user(current_user: Annotated[models.User, Depends(get_current_user)]):
+    if current_user.role != models.UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions. Admin access required."
+        )
+    return current_user
+
+# Flexible role checker
+def require_role(allowed_roles: list):
+    def role_checker(current_user: Annotated[models.User, Depends(get_current_user)]):
+        if current_user.role.value not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Not enough permissions. Required roles: {', '.join(allowed_roles)}"
+            )
+        return current_user
+    return role_checker

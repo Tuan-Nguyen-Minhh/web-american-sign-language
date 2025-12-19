@@ -3,6 +3,7 @@ import { faUser, faHands } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
 import { TbLogout } from "react-icons/tb";
 import { authService } from "../../services/authService";
+import { isAdmin } from "../../utils/roleUtils";
 import "./header.css"; 
 
 export default function Header({ isDarkMode, toggleTheme }) {
@@ -43,6 +44,15 @@ export default function Header({ isDarkMode, toggleTheme }) {
                 Contribute
               </Link>
             </li>
+
+            {/* Admin Dashboard Link - Only visible for admins */}
+            {isAuthenticated && isAdmin(currentUser) && (
+              <li>
+                <Link to="/admin" className="nav-link" style={{color: 'var(--accent-color)', fontWeight: 'bold'}}>
+                  Admin
+                </Link>
+              </li>
+            )}
 
             <li className="nav-item">
               <a 

@@ -10,6 +10,7 @@ class ShowUser(BaseModel):
     id: int
     name: str
     email: str
+    role: str  # 'admin' or 'user'
     total_detection_sessions: int = 0
     
     class Config():
@@ -35,6 +36,7 @@ class UserInfo(BaseModel):
     id: int
     name: str
     email: str
+    role: str  # 'admin' or 'user'
 
 class LoginResponse(BaseModel):
     access_token: str
@@ -45,6 +47,7 @@ class TokenData(BaseModel):
     email: str | None = None
     user_id: int | None = None
     name: str | None = None
+    role: str | None = None
 
 class HandDetection(BaseModel):
     bbox: List[int]  # [x1, y1, x2, y2]

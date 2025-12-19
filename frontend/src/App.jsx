@@ -5,6 +5,8 @@ import About from "./components/about/About";
 import Home from "./components/Home";
 import Profile from "./components/profile/Profile";
 import Contribute from "./components/contribute/Contribute";
+import AdminDashboard from "./components/AdminDashboard";
+import AdminRoute from "./components/AdminRoute";
 import {
   BrowserRouter as Router,
   Routes,
@@ -88,6 +90,16 @@ function AppContent() {
 
           {/* Public Route - Login (ALLOW ACCESS EVEN IF LOGGED IN) */}
           <Route path="/login" element={<LoginRegister />} />
+
+          {/* Admin-only Route */}
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
 
           {/* Catch-all route - redirect to home or login */}
           <Route

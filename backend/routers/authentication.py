@@ -41,7 +41,8 @@ def login(
     access_token = token.create_access_token(data={
         "sub": user.email,
         "user_id": user.id,
-        "name": user.name
+        "name": user.name,
+        "role": user.role.value  # Include role in JWT token
     })
     
     return {
@@ -50,7 +51,8 @@ def login(
         "user": {
             "id": user.id,
             "name": user.name,
-            "email": user.email
+            "email": user.email,
+            "role": user.role.value
         }
     }
 
