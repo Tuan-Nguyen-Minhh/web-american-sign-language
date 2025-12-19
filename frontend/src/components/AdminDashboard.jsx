@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiClient } from '../utils/apiClient';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -20,13 +21,10 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
       
       // Fetch users
-      const usersResponse = await fetch(`${API_URL}/api/admin/users`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const usersResponse = await apiClient('/api/admin/users', {
+        method: 'GET'
       });
       
       if (!usersResponse.ok) {
@@ -37,10 +35,8 @@ const AdminDashboard = () => {
       setUsers(usersData);
       
       // Fetch statistics
-      const statsResponse = await fetch(`${API_URL}/api/admin/statistics`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const statsResponse = await apiClient('/api/admin/statistics', {
+        method: 'GET'
       });
       
       if (!statsResponse.ok) {
@@ -63,12 +59,8 @@ const AdminDashboard = () => {
     }
     
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_URL}/api/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await apiClient(`/api/admin/users/${userId}`, {
+        method: 'DELETE'
       });
       
       if (!response.ok) {
@@ -92,12 +84,8 @@ const AdminDashboard = () => {
     }
     
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_URL}/api/admin/users/${userId}/role?role=${newRole}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await apiClient(`/api/admin/users/${userId}/role?role=${newRole}`, {
+        method: 'PATCH'
       });
       
       if (!response.ok) {
@@ -119,11 +107,8 @@ const AdminDashboard = () => {
     setHistoryLoading(true);
     
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`${API_URL}/api/admin/users/${userId}/detection-history`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await apiClient(`/api/admin/users/${userId}/detection-history`, {
+        method: 'GET'
       });
       
       if (!response.ok) {

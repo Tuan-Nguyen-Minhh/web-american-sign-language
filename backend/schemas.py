@@ -32,6 +32,14 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+class TokenWithRefresh(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
 class UserInfo(BaseModel):
     id: int
     name: str
@@ -40,6 +48,7 @@ class UserInfo(BaseModel):
 
 class LoginResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
     user: UserInfo
 
