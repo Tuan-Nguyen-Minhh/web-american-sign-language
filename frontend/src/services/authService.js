@@ -92,5 +92,36 @@ export const authService = {
 
   isAuthenticated() {
     return !!this.getToken();
+  },
+
+  // Verify if token is still valid by calling /me endpoint
+  async verifyToken() {
+    const token = this.getToken();
+    if (!token) {
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        // Token is invalid or expired
+        this.logout();
+        return false;
+      }
+
+      // Token is valid, update user cache with fresh data
+      const userData = await response.json();
+      this.updateUserCache(userData);
+      return true;
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      this.logout();
+      return false;
+    }
   }
 };

@@ -36,6 +36,25 @@ function AppContent() {
     return savedTheme === "dark";
   });
 
+  // Check token validity on app mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      // Skip check if on login page
+      if (isLoginPage) return;
+      
+      const token = authService.getToken();
+      if (token) {
+        // Verify token with backend
+        const isValid = await authService.verifyToken();
+        if (!isValid) {
+          console.log('Token expired or invalid, redirecting to login...');
+        }
+      }
+    };
+
+    checkAuth();
+  }, [isLoginPage]);
+
   useEffect(() => {
     const root = document.documentElement;
     if (isDarkMode) {
