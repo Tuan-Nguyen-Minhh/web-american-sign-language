@@ -142,3 +142,27 @@ def refresh_access_token(
         "refresh_token": new_refresh_token,
         "token_type": "bearer"
     }
+
+# Guest login endpoint - no credentials required
+@router.post('/guest', response_model=schemas.LoginResponse)
+def guest_login():
+    # Create a temporary guest token (no database entry)
+    access_token = token.create_access_token(data={
+        "sub": "guest",
+        "user_id": 0,
+        "name": "Guest",
+        "role": models.UserRole.GUEST.value
+    })
+    
+    # Guest doesn't need a refresh token (session-based only)
+    return {
+        "access_token": access_token,
+        "refresh_token": None,
+        "token_type": "bearer",
+        "user": {
+            "id": 0,
+            "name": "Guest",
+            "email": "guest",
+            "role": models.UserRole.GUEST.value
+        }
+    }

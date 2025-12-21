@@ -5,8 +5,8 @@ import About from "./components/about/About";
 import Home from "./components/Home";
 import Profile from "./components/profile/Profile";
 import Contribute from "./components/contribute/Contribute";
-import AdminDashboard from "./components/AdminDashboard";
-import AdminRoute from "./components/AdminRoute";
+import AdminDashboard from "./components/admin/AdminDashboard";
+import AdminRoute from "./components/admin/AdminRoute";
 import {
   BrowserRouter as Router,
   Routes,

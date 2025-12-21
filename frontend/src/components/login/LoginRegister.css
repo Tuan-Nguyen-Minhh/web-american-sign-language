@@ -182,6 +182,38 @@ form .register-link {
   color: var(--text-accent);
 }
 
+.guest-login {
+  text-align: center;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+}
+
+.guest-button {
+  width: 100%;
+  height: 45px;
+  background: transparent;
+  border: 2px solid var(--border-color);
+  outline: none;
+  border-radius: 40px;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.guest-button:hover:not(:disabled) {
+  background: var(--bg-medium);
+  color: var(--text-dark);
+  border-color: var(--text-secondary);
+}
+
+.guest-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .error-message {
   background-color: #fee;
   color: #c33;

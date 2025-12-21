@@ -13,7 +13,7 @@ router = APIRouter(
 # Increment total detection sessions counter. Called when user stops detection (whether they save or not)
 @router.post("/increment-session")
 async def increment_detection_session(
-    current_user: models.User = Depends(jwt_token.get_current_user),
+    current_user: models.User = Depends(jwt_token.get_authenticated_user),
     db: Session = Depends(database.get_db)
 ):
     try:
@@ -39,7 +39,7 @@ async def increment_detection_session(
 @router.post("/save", response_model=schemas.DetectionHistoryResponse)
 async def save_detection_history(
     request: schemas.SaveDetectionHistoryRequest,
-    current_user: models.User = Depends(jwt_token.get_current_user),
+    current_user: models.User = Depends(jwt_token.get_authenticated_user),
     db: Session = Depends(database.get_db)
 ):
     try:
@@ -79,7 +79,7 @@ async def save_detection_history(
 # Get all detection history for current user
 @router.get("/", response_model=List[schemas.DetectionHistoryResponse])
 async def get_detection_history(
-    current_user: models.User = Depends(jwt_token.get_current_user),
+    current_user: models.User = Depends(jwt_token.get_authenticated_user),
     db: Session = Depends(database.get_db),
     limit: int = 50
 ):
@@ -112,7 +112,7 @@ async def get_detection_history(
 @router.get("/{history_id}", response_model=schemas.DetectionHistoryResponse)
 async def get_detection_history_by_id(
     history_id: int,
-    current_user: models.User = Depends(jwt_token.get_current_user),
+    current_user: models.User = Depends(jwt_token.get_authenticated_user),
     db: Session = Depends(database.get_db)
 ):
     try:
@@ -148,7 +148,7 @@ async def get_detection_history_by_id(
 @router.delete("/{history_id}")
 async def delete_detection_history(
     history_id: int,
-    current_user: models.User = Depends(jwt_token.get_current_user),
+    current_user: models.User = Depends(jwt_token.get_authenticated_user),
     db: Session = Depends(database.get_db)
 ):
     try:

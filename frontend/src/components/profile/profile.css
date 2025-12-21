@@ -63,7 +63,7 @@
 
 /* Header Styles */
 .profile-header {
-  background-color: var(--card-bg);
+  background-color: var(--bg-light);
   border-radius: 16px;
   padding: 32px;
   margin-bottom: 24px;
@@ -97,7 +97,7 @@
 
 .avatar-icon {
   font-size: 48px;
-  color: #FFFFFF;
+  color: var(--card-bg);
 }
 
 .user-info {
@@ -155,6 +155,44 @@
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
   margin-bottom: 32px;
+}
+
+.guest-info-banner {
+  background: var(--bg-medium);
+  color: var(--text-secondary);
+  padding: 20px 24px;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.guest-info-banner p {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.guest-action-link {
+  color: var(--primary-color);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.guest-action-link:hover {
+  color: var(--hover-color);
+  text-decoration: none;
+}
+
+.guest-action-link:active {
+  transform: scale(0.98);
+}
+
+.guest-info-banner strong {
+  font-weight: 700;
+  text-decoration: underline;
 }
 
 .stat-card {

@@ -200,5 +200,45 @@ export const authService = {
       const newToken = await this.refreshToken();
       return !!newToken;
     }
+  },
+
+  // Guest login - no credentials required
+  async guestLogin() {
+    try {
+      console.log('Attempting guest login...');
+
+      const response = await fetch(`${API_BASE_URL}/auth/guest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Guest login response status:', response.status);
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Guest login error response:', error);
+        throw new Error(error.detail || 'Guest login failed');
+      }
+
+      const data = await response.json();
+      console.log('Guest login successful');
+      
+      // Store token and user info (no refresh token for guests)
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      return data;
+    } catch (error) {
+      console.error('Guest login error:', error);
+      throw error;
+    }
+  },
+
+  // Check if current user is a guest
+  isGuest() {
+    const user = this.getUser();
+    return user?.role === 'guest';
   }
 };

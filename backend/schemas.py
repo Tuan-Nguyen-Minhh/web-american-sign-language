@@ -48,7 +48,7 @@ class UserInfo(BaseModel):
 
 class LoginResponse(BaseModel):
     access_token: str
-    refresh_token: str
+    refresh_token: str | None  # Optional for guest users
     token_type: str
     user: UserInfo
 

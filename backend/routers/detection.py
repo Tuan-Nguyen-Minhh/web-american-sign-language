@@ -124,7 +124,7 @@ class HandDetectionService:
 @router.post("/detect-frame", response_model=schemas.DetectionResponse)
 async def detect_hands_from_upload(
     file: UploadFile = File(...),
-    current_user: models.User = Depends(jwt_token.get_current_user)
+    current_user: models.User = Depends(jwt_token.get_authenticated_user)
 ):
     # Validate file type
     if not file.content_type.startswith('image/'):
@@ -150,7 +150,7 @@ async def detect_hands_from_upload(
 
 # ASL Prediction endpoint (compatible with LiveDetectionInterface)
 @router.post("/predict", response_model=schemas.ASLPredictionResponse)
-async def predict_asl_sign(request: schemas.DetectionRequest, current_user: models.User = Depends(jwt_token.get_current_user)):
+async def predict_asl_sign(request: schemas.DetectionRequest, current_user: models.User = Depends(jwt_token.get_authenticated_user)):
     try:
         base64_data = request.image
         

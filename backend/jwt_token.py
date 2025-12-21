@@ -78,6 +78,20 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotate
 
     except InvalidTokenError:
         raise credentials_exception
+    
+    # Handle guest users (they don't exist in the database)
+    if role == models.UserRole.GUEST.value:
+        # Create a temporary guest user object (not persisted in DB)
+        guest_user = models.User(
+            id=0,
+            name="Guest",
+            email="guest",
+            password="",
+            role=models.UserRole.GUEST,
+            total_detection_sessions=0
+        )
+        return guest_user
+    
     user = db.query(models.User).filter(models.User.email == token_data.email).first()
 
     if user is None:
@@ -104,3 +118,12 @@ def require_role(allowed_roles: list):
             )
         return current_user
     return role_checker
+
+# Dependency to ensure user is not a guest (for restricted features)
+def get_authenticated_user(current_user: Annotated[models.User, Depends(get_current_user)]):
+    if current_user.role == models.UserRole.GUEST:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This feature requires authentication. Please login or register."
+        )
+    return current_user

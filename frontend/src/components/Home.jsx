@@ -1,5 +1,6 @@
 import React from 'react';
 import LiveDetectionInterface from './LiveDetectionInterface'; // <-- IMPORT COMPONENT MỚI
+import GuestRestriction from './guest/GuestRestriction';
 
 // Component giả định PageHeading (nên tạo file riêng sau)
 const PageHeading = ({ title, children }) => (
@@ -17,8 +18,10 @@ export default function Home() {
       <PageHeading>
       </PageHeading>
 
-      {/* RENDER COMPONENT MỚI */}
-      <LiveDetectionInterface /> 
+      {/* RENDER COMPONENT MỚI - Wrapped with GuestRestriction */}
+      <GuestRestriction feature="ASL detection">
+        <LiveDetectionInterface /> 
+      </GuestRestriction>
       
     </div>
   );
