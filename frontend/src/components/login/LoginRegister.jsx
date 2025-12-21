@@ -18,6 +18,7 @@ export default function LoginRegister() {
     loginLoading,
     handleLoginChange,
     handleLoginSubmit,
+    handleGuestLogin,
   } = useLogin();
 
   const {
@@ -125,6 +126,17 @@ export default function LoginRegister() {
                   Signup
                 </a>
               </p>
+            </div>
+
+            <div className="guest-login">
+              <button
+                type="button"
+                className="guest-button"
+                onClick={handleGuestLogin}
+                disabled={loginLoading}
+              >
+                Continue as Guest
+              </button>
             </div>
           </form>
         </div>

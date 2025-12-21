@@ -14,6 +14,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { authService } from "../../services/authService";
 import apiService from "../../services/apiService";
+import GuestRestriction from "../guest/GuestRestriction";
 import "./profile.css";
 
 export default function Profile() {
@@ -97,6 +98,12 @@ export default function Profile() {
         setRefreshing(true);
       }
 
+      // Skip data fetching for guest users
+      if (authService.isGuest()) {
+        setRefreshing(false);
+        return;
+      }
+
       // Fetch fresh user data from backend
       const freshUser = await apiService.getCurrentUser();
       
@@ -165,10 +172,8 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
-    if (window.confirm("Are you sure you want to logout?")) {
-      authService.logout();
-      navigate("/login");
-    }
+    authService.logout();
+    navigate("/login");
   };
 
   const formatDate = (dateString) => {
@@ -224,21 +229,23 @@ export default function Profile() {
               </p>
             </div>
           </div>
-          <div className="header-actions">
-            <button
-              className="refresh-btn"
-              onClick={() => refreshUserData(true)}
-              disabled={refreshing}
-              title="Refresh profile data"
-            >
-              <FaSync className={`btn-icon ${refreshing ? "spinning" : ""}`} />
-              {refreshing ? "Refreshing..." : "Refresh"}
-            </button>
-            <button className="logout-btn" onClick={handleLogout}>
-              <FaSignOutAlt className="btn-icon" />
-              Logout
-            </button>
-          </div>
+          {!authService.isGuest() && (
+            <div className="header-actions">
+              <button
+                className="refresh-btn"
+                onClick={() => refreshUserData(true)}
+                disabled={refreshing}
+                title="Refresh profile data"
+              >
+                <FaSync className={`btn-icon ${refreshing ? "spinning" : ""}`} />
+                {refreshing ? "Refreshing..." : "Refresh"}
+              </button>
+              <button className="logout-btn" onClick={handleLogout}>
+                <FaSignOutAlt className="btn-icon" />
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -251,39 +258,60 @@ export default function Profile() {
       )}
 
       {/* Stats Cards */}
-      <div className="stats-container">
-        <div className="stat-card">
-          <div className="stat-icon">
-            <FaHandPaper />
+      {!authService.isGuest() && (
+        <div className="stats-container">
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FaHandPaper />
+            </div>
+            <div className="stat-info">
+              <h3 className="stat-number">{user.totalDetections}</h3>
+              <p className="stat-label">Total Detection Sessions</p>
+            </div>
           </div>
-          <div className="stat-info">
-            <h3 className="stat-number">{user.totalDetections}</h3>
-            <p className="stat-label">Total Detection Sessions</p>
+
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FaHistory />
+            </div>
+            <div className="stat-info">
+              <h3 className="stat-number">{detectionHistory.length}</h3>
+              <p className="stat-label">Saved Sessions</p>
+            </div>
           </div>
         </div>
-
-        <div className="stat-card">
-          <div className="stat-icon">
-            <FaHistory />
-          </div>
-          <div className="stat-info">
-            <h3 className="stat-number">{detectionHistory.length}</h3>
-            <p className="stat-label">Saved Sessions</p>
-          </div>
-        </div>
-      </div>
-
-      {/* History Section */}
-      <div className="history-section">
-        <div className="section-header">
-          <h2 className="section-title">
-            <FaHistory className="icon-medium" />
-            Detection History
-          </h2>
-          <p className="section-subtitle">
-            View and manage your saved ASL detection sessions
+      )}
+      
+      {/* Guest Info Banner */}
+      {authService.isGuest() && (
+        <div className="guest-info-banner">
+          <p>
+            You're browsing as a guest.{" "}
+            <span 
+              className="guest-action-link" 
+              onClick={handleLogout}
+              role="button"
+              tabIndex={0}
+            >
+              Login or register
+            </span>
+            {" "}to use detection and save your progress!
           </p>
         </div>
+      )}
+
+      {/* History Section - Restricted for guests */}
+      <GuestRestriction feature="detection history">
+        <div className="history-section">
+          <div className="section-header">
+            <h2 className="section-title">
+              <FaHistory className="icon-medium" />
+              Detection History
+            </h2>
+            <p className="section-subtitle">
+              View and manage your saved ASL detection sessions
+            </p>
+          </div>
 
         {detectionHistory.length === 0 ? (
           <div className="empty-state">
@@ -371,6 +399,7 @@ export default function Profile() {
           </div>
         )}
       </div>
+      </GuestRestriction>
 
       {/* Details Modal */}
       {selectedVideo && (

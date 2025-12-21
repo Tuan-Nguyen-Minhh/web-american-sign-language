@@ -7,6 +7,7 @@ import enum
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
     USER = "user"
+    GUEST = "guest"
 
 class User(Base):
     __tablename__ = "users"
@@ -17,6 +18,7 @@ class User(Base):
     password = Column(String)
     role = Column(Enum(UserRole), default=UserRole.USER)  # Role: admin or user
     total_detection_sessions = Column(Integer, default=0)  # Count all sessions (saved or not)
+    refresh_token = Column(String, nullable=True)  # Store refresh token for auto-login
 
     detection_histories = relationship("DetectionHistory", back_populates="user")
 

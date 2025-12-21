@@ -45,8 +45,18 @@ def login(
         "role": user.role.value  # Include role in JWT token
     })
     
+    refresh_token = token.create_refresh_token(data={
+        "sub": user.email,
+        "user_id": user.id
+    })
+    
+    # Store refresh token in database
+    user.refresh_token = refresh_token
+    db.commit()
+    
     return {
-        "access_token": access_token, 
+        "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
         "user": {
             "id": user.id,
@@ -99,3 +109,60 @@ def register(request: schemas.UserCreate, db: Session = Depends(database.get_db)
 @router.get('/me', response_model=schemas.ShowUser)
 def get_current_user_info(current_user: models.User = Depends(token.get_current_user)):
     return current_user
+
+# Refresh access token using refresh token
+@router.post('/refresh', response_model=schemas.TokenWithRefresh)
+def refresh_access_token(
+    request: schemas.RefreshTokenRequest,
+    db: Session = Depends(database.get_db)
+):
+    # Verify refresh token
+    user = token.verify_refresh_token(request.refresh_token, db)
+    
+    # Generate new access token
+    new_access_token = token.create_access_token(data={
+        "sub": user.email,
+        "user_id": user.id,
+        "name": user.name,
+        "role": user.role.value
+    })
+    
+    # Optionally rotate refresh token (more secure)
+    new_refresh_token = token.create_refresh_token(data={
+        "sub": user.email,
+        "user_id": user.id
+    })
+    
+    # Update refresh token in database
+    user.refresh_token = new_refresh_token
+    db.commit()
+    
+    return {
+        "access_token": new_access_token,
+        "refresh_token": new_refresh_token,
+        "token_type": "bearer"
+    }
+
+# Guest login endpoint - no credentials required
+@router.post('/guest', response_model=schemas.LoginResponse)
+def guest_login():
+    # Create a temporary guest token (no database entry)
+    access_token = token.create_access_token(data={
+        "sub": "guest",
+        "user_id": 0,
+        "name": "Guest",
+        "role": models.UserRole.GUEST.value
+    })
+    
+    # Guest doesn't need a refresh token (session-based only)
+    return {
+        "access_token": access_token,
+        "refresh_token": None,
+        "token_type": "bearer",
+        "user": {
+            "id": 0,
+            "name": "Guest",
+            "email": "guest",
+            "role": models.UserRole.GUEST.value
+        }
+    }

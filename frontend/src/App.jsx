@@ -5,8 +5,8 @@ import About from "./components/about/About";
 import Home from "./components/Home";
 import Profile from "./components/profile/Profile";
 import Contribute from "./components/contribute/Contribute";
-import AdminDashboard from "./components/AdminDashboard";
-import AdminRoute from "./components/AdminRoute";
+import AdminDashboard from "./components/admin/AdminDashboard";
+import AdminRoute from "./components/admin/AdminRoute";
 import {
   BrowserRouter as Router,
   Routes,
@@ -35,6 +35,25 @@ function AppContent() {
     const savedTheme = localStorage.getItem("theme");
     return savedTheme === "dark";
   });
+
+  // Check token validity on app mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      // Skip check if on login page
+      if (isLoginPage) return;
+      
+      const token = authService.getToken();
+      if (token) {
+        // Verify token with backend
+        const isValid = await authService.verifyToken();
+        if (!isValid) {
+          console.log('Token expired or invalid, redirecting to login...');
+        }
+      }
+    };
+
+    checkAuth();
+  }, [isLoginPage]);
 
   useEffect(() => {
     const root = document.documentElement;

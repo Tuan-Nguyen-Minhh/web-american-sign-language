@@ -49,11 +49,38 @@ export const useLogin = () => {
     }
   };
 
+  const handleGuestLogin = async () => {
+    setLoginError('');
+    setLoginLoading(true);
+
+    try {
+      await authService.guestLogin();
+      navigate('/');
+    } catch (error) {
+      console.error('Guest login error:', error);
+      
+      let errorMessage = 'Guest login failed. Please try again.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error.detail) {
+        errorMessage = error.detail;
+      }
+      
+      setLoginError(errorMessage);
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
   return {
     loginData,
     loginError,
     loginLoading,
     handleLoginChange,
-    handleLoginSubmit
+    handleLoginSubmit,
+    handleGuestLogin
   };
 };

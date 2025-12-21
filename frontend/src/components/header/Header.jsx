@@ -76,9 +76,11 @@ export default function Header({ isDarkMode, toggleTheme }) {
            
             {isAuthenticated ? (
               <>
-                <li className="nav-item">
-                  <TbLogout onClick={handleLogout} style={{cursor: 'pointer', color: 'var(--primary-color)'}} />
-                </li>
+                {!authService.isGuest() && (
+                  <li className="nav-item">
+                    <TbLogout onClick={handleLogout} style={{cursor: 'pointer', color: 'var(--primary-color)'}} />
+                  </li>
+                )}
                 <li className="nav-item">
                   <Link to="/profile" className="nav-link">
                     <FontAwesomeIcon icon={faUser} />

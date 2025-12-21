@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from . import models
-from .database import engine
+from .database import engine, init_database
 from .routers import users, authentication, detection, detection_history, admin
 from .config import static_dir, assets_dir
 
@@ -21,8 +21,8 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# Create database tables
-models.Base.metadata.create_all(bind=engine)
+# Initialize database and create default admin
+init_database()
 
 # Include routers with /api prefix
 app.include_router(authentication.router)

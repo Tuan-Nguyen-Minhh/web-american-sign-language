@@ -89,6 +89,42 @@ def update_user_role(
         "role": user.role.value
     }}
 
+# Get detection history for a specific user (Admin only)
+@router.get('/users/{user_id}/detection-history', response_model=List[schemas.DetectionHistoryResponse])
+def get_user_detection_history(
+    user_id: int,
+    db: Session = Depends(database.get_db),
+    current_admin: models.User = Depends(token.get_current_admin_user),
+    limit: int = 50
+):
+    # Verify user exists
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with id {user_id} not found"
+        )
+    
+    # Get detection histories for this user
+    import json
+    histories = db.query(models.DetectionHistory)\
+        .filter(models.DetectionHistory.user_id == user_id)\
+        .order_by(models.DetectionHistory.created_at.desc())\
+        .limit(limit)\
+        .all()
+    
+    result = []
+    for history in histories:
+        result.append(schemas.DetectionHistoryResponse(
+            id=history.id,
+            session_name=history.session_name,
+            total_detections=history.total_detections,
+            created_at=history.created_at.isoformat(),
+            detections=[schemas.DetectionItem(**det) for det in json.loads(history.detections_data)]
+        ))
+    
+    return result
+
 # Get system statistics (Admin only)
 @router.get('/statistics')
 def get_system_statistics(
