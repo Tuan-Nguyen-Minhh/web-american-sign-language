@@ -27,7 +27,8 @@ export async function apiClient(endpoint, options = {}) {
   if (response.status === 401) {
     const refreshToken = localStorage.getItem('refresh_token');
     
-    if (refreshToken) {
+    // Don't try to refresh for guest users (they don't have refresh tokens)
+    if (refreshToken && !authService.isGuest()) {
       console.log('Got 401, attempting token refresh...');
       const newToken = await authService.refreshToken();
       

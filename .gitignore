@@ -1,5 +1,6 @@
 __pycache__
 asl_env
+.vscode
 
 *.h5
 

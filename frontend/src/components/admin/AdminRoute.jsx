@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { isAdmin } from '../utils/roleUtils';
+import { isAdmin } from '../../utils/roleUtils';
 
 /**
  * Component to protect admin-only routes
