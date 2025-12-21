@@ -45,8 +45,19 @@ DATABASE_URL=postgresql://user-name:pass-word@localhost:port/asl_db
 - pass-word : là mật khẩu postgresql của mọi người
 - port : port của postgresql
 - SECRET_KEY và ALGORITHM giữ nguyên, sau này khi thống nhất host chung một postgresql rồi thì mình tạo SECRET_KEY khác cho bảo mật sau.
+#### 5. Tạo admin
+Mở cmd vào folder chính
+- Kích hoạt môi trường ảo
+```bash
+asl_env\Scripts\activate
+```
 
-#### 5. Lệnh chạy
+- Tạo user
+```bash
+python create_admin.py
+```
+
+#### 6. Lệnh chạy
 Mở 2 terminal cmd
 **`Terminal 1`**
 - Kích hoạt môi trường ảo

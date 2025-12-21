@@ -79,6 +79,49 @@ class ApiService {
   async getUser(userId) {
     return this.request(`/user/${userId}`);
   }
+
+  // Hand Detection endpoints
+  async detectHandsFromBase64(base64Image) {
+    return this.request('/detection/detect-base64', {
+      method: 'POST',
+      body: JSON.stringify({ image: base64Image }),
+    });
+  }
+
+  async detectHandsFromFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const token = authService.getToken();
+    const config = {
+      method: 'POST',
+      body: formData,
+      headers: {}
+    };
+
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/detection/detect-frame`, config);
+      
+      if (response.status === 401) {
+        authService.logout();
+        throw new Error('Session expired. Please login again.');
+      }
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Detection failed');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Detection API error:', error);
+      throw error;
+    }
+  }
 }
 
 export default new ApiService();
