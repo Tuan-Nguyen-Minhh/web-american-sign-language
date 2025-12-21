@@ -23,7 +23,7 @@ const AdminDashboard = () => {
       setLoading(true);
       
       // Fetch users
-      const usersResponse = await apiClient('/api/admin/users', {
+      const usersResponse = await apiClient('/admin/users', {
         method: 'GET'
       });
       
@@ -35,7 +35,7 @@ const AdminDashboard = () => {
       setUsers(usersData);
       
       // Fetch statistics
-      const statsResponse = await apiClient('/api/admin/statistics', {
+      const statsResponse = await apiClient('/admin/statistics', {
         method: 'GET'
       });
       
@@ -59,7 +59,7 @@ const AdminDashboard = () => {
     }
     
     try {
-      const response = await apiClient(`/api/admin/users/${userId}`, {
+      const response = await apiClient(`/admin/users/${userId}`, {
         method: 'DELETE'
       });
       
@@ -84,7 +84,7 @@ const AdminDashboard = () => {
     }
     
     try {
-      const response = await apiClient(`/api/admin/users/${userId}/role?role=${newRole}`, {
+      const response = await apiClient(`/admin/users/${userId}/role?role=${newRole}`, {
         method: 'PATCH'
       });
       
@@ -107,7 +107,7 @@ const AdminDashboard = () => {
     setHistoryLoading(true);
     
     try {
-      const response = await apiClient(`/api/admin/users/${userId}/detection-history`, {
+      const response = await apiClient(`/admin/users/${userId}/detection-history`, {
         method: 'GET'
       });
       

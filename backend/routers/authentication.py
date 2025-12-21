@@ -119,23 +119,25 @@ def refresh_access_token(
     # Verify refresh token
     user = token.verify_refresh_token(request.refresh_token, db)
     
-    # Generate new access token
+    # Generate new access token with FULL user data including role
     new_access_token = token.create_access_token(data={
         "sub": user.email,
         "user_id": user.id,
         "name": user.name,
-        "role": user.role.value
+        "role": user.role.value  # IMPORTANT: Include role for admin access
     })
     
     # Optionally rotate refresh token (more secure)
     new_refresh_token = token.create_refresh_token(data={
         "sub": user.email,
-        "user_id": user.id
+        "user_id": user.id,
+        "role": user.role.value  # Include role in refresh token too
     })
     
     # Update refresh token in database
     user.refresh_token = new_refresh_token
     db.commit()
+    db.refresh(user)
     
     return {
         "access_token": new_access_token,
