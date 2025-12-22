@@ -146,7 +146,12 @@ export const authService = {
         console.error('❌ Token refresh failed:', response.status, errorData.detail);
         isRefreshing = false;
         onRefreshed(null);
-        this.logout();
+        
+        // Only logout if it's a 401 (invalid/expired refresh token)
+        // For other errors, let the user try again
+        if (response.status === 401) {
+          this.logout();
+        }
         return null;
       }
 
@@ -164,7 +169,8 @@ export const authService = {
       console.error('❌ Token refresh error:', error.message);
       isRefreshing = false;
       onRefreshed(null);
-      this.logout();
+      // Only logout on network errors, not on expected API failures
+      // this.logout();
       return null;
     }
   },
