@@ -8,10 +8,8 @@
 
   /* Text & Accent Colors */
   --primary-color: #635985;
-  /* Tím đậm (Màu chính) */
   --hover-color: #443C68;
   --text-primary: #18122B;
-  /* Đổi tên --text-dark thành --text-primary để dễ quản lý */
   --text-secondary: #393053;
 
   /* Utility colors */
@@ -21,6 +19,13 @@
   --hover-shadow-color: rgba(24, 18, 43, 0.2);
   --card-bg: #FFFFFF;
 
+  /* Action colors */
+  --success-color: #28a745;
+  --success-hover: #218838;
+  --danger-color: #fee;
+  --danger-text: #c33;
+  --disabled-color: #6c757d;
+
   /* Layout variables */
   --padding-x: 24px;
   --padding-y: 16px;
@@ -29,29 +34,34 @@
   --font-size-lg: 1.125rem;
 }
 
-
 .dark {
-  /* Ghi đè màu nền sang tối */
+  /* Dark mode backgrounds */
   --bg-light: #181818;
   --bg-medium: #222222;
   --bg-dark: #333333;
   --bg-darker: #4a4a4a;
 
-  /* Ghi đè màu Card */
+  /* Dark mode card */
   --card-bg: #2a2a2a;
-  --border-color: #444;
+  --border-color: #444444;
+  --dark-border-color: #555555;
   --shadow-color: rgba(0, 0, 0, 0.5);
+  --hover-shadow-color: rgba(0, 0, 0, 0.7);
 
-  /* Ghi đè màu chữ sang sáng (FIX LỖI KHÓ NHÌN) */
+  /* Dark mode text colors */
   --text-primary: #F0F0F0;
-  /* Trắng xám */
   --text-secondary: #B0B0B0;
 
-  /* Ghi đè màu Link/Primary sang màu sáng để tương phản */
+  /* Dark mode primary colors */
   --primary-color: #D4C9FF;
-  /* Tím phấn sáng */
   --hover-color: #FFFFFF;
-  /* Trắng tinh khi hover */
+
+  /* Dark mode action colors */
+  --success-color: #4ade80;
+  --success-hover: #22c55e;
+  --danger-color: #991b1b;
+  --danger-text: #fca5a5;
+  --disabled-color: #6b7280;
 }
 
 .profile-container {
@@ -63,7 +73,7 @@
 
 /* Header Styles */
 .profile-header {
-  background-color: var(--bg-light);
+  background-color: var(--bg-medium);
   border-radius: 16px;
   padding: 32px;
   margin-bottom: 24px;
@@ -130,7 +140,7 @@
 
 .logout-btn {
   background-color: var(--primary-color);
-  color: #FFFFFF;
+  color: var(--card-bg);
   border: none;
   border-radius: 8px;
   padding: 12px 24px;
@@ -164,7 +174,7 @@
   border-radius: 12px;
   text-align: center;
   margin-bottom: 32px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .guest-info-banner p {
@@ -196,7 +206,7 @@
 }
 
 .stat-card {
-  background-color: var(--card-bg);
+  background-color: var(--bg-medium);
   border-radius: 12px;
   padding: 24px;
   display: flex;
@@ -215,7 +225,7 @@
   width: 60px;
   height: 60px;
   border-radius: 12px;
-  background-color: var(--bg-medium);
+  background-color: var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -242,7 +252,7 @@
 
 /* History Section Styles */
 .history-section {
-  background-color: var(--card-bg);
+  background-color: var(--bg-medium);
   border-radius: 16px;
   padding: 32px;
   box-shadow: 0 2px 8px var(--shadow-color);
@@ -309,7 +319,7 @@
 .letter {
   font-size: 32px;
   font-weight: var(--font-weight-bold);
-  color: #FFFFFF;
+  color: var(--card-bg);
 }
 
 .delete-btn {
@@ -324,8 +334,8 @@
 }
 
 .delete-btn:hover {
-  background-color: #fee;
-  color: #c33;
+  background-color: var(--danger-color);
+  color: var(--danger-text);
 }
 
 .card-body {
@@ -354,7 +364,7 @@
 
 .confidence-badge {
   background-color: var(--primary-color);
-  color: #FFFFFF;
+  color: var(--card-bg);
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
@@ -371,7 +381,7 @@
 .action-btn {
   flex: 1;
   background-color: var(--primary-color);
-  color: #FFFFFF;
+  color: var(--card-bg);
   border: none;
   border-radius: 8px;
   padding: 10px;
@@ -393,8 +403,8 @@
 
 .play-btn {
   flex: 1;
-  background-color: #28a745;
-  color: #FFFFFF;
+  background-color: var(--success-color);
+  color: var(--card-bg);
   border: none;
   border-radius: 8px;
   padding: 10px;
@@ -410,12 +420,12 @@
 }
 
 .play-btn:hover:not(:disabled) {
-  background-color: #218838;
+  background-color: var(--success-hover);
   transform: translateY(-1px);
 }
 
 .play-btn:disabled {
-  background-color: #6c757d;
+  background-color: var(--disabled-color);
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -452,7 +462,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(24, 18, 43, 0.7);
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -563,7 +573,7 @@
 
 .refresh-btn:hover:not(:disabled) {
   background-color: var(--primary-color);
-  color: white;
+  color: var(--card-bg);
   transform: translateY(-2px);
 }
 
@@ -590,7 +600,7 @@
 /* Refresh Indicator */
 .refresh-indicator {
   background-color: var(--primary-color);
-  color: white;
+  color: var(--card-bg);
   padding: 12px 24px;
   border-radius: 8px;
   display: flex;
@@ -673,14 +683,14 @@
 .session-name {
   margin: 0;
   font-size: 1.1rem;
-  color: #18122B;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .session-date {
   display: block;
   font-size: 0.85rem;
-  color: #635985;
+  color: var(--primary-color);
   margin-top: 4px;
 }
 
@@ -698,8 +708,8 @@
 .gesture-badge {
   display: inline-block;
   padding: 4px 10px;
-  background-color: #EFE9E3;
-  color: #18122B;
+  background-color: var(--bg-medium);
+  color: var(--text-primary);
   border-radius: 12px;
   font-size: 0.85rem;
   font-weight: 500;
@@ -708,8 +718,8 @@
 .more-badge {
   display: inline-block;
   padding: 4px 10px;
-  background-color: #635985;
-  color: #FFFFFF;
+  background-color: var(--primary-color);
+  color: var(--card-bg);
   border-radius: 12px;
   font-size: 0.85rem;
   font-weight: 500;
@@ -721,8 +731,8 @@
 
 .modal-info-row {
   padding: 10px 0;
-  border-bottom: 1px solid #EFE9E3;
-  color: #18122B;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
 .modal-detections {
@@ -730,7 +740,7 @@
 }
 
 .modal-detections h4 {
-  color: #18122B;
+  color: var(--text-primary);
   margin-bottom: 15px;
   font-size: 1.1rem;
 }
@@ -748,20 +758,20 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  background-color: #F9F8F6;
+  background-color: var(--bg-light);
   border-radius: 8px;
-  border-left: 3px solid #635985;
+  border-left: 3px solid var(--primary-color);
 }
 
 .detection-word {
   font-weight: 600;
-  color: #18122B;
+  color: var(--text-primary);
 }
 
 .detection-confidence {
   font-weight: 600;
-  color: #443C68;
-  background-color: #EFE9E3;
+  color: var(--primary-color);
+  background-color: var(--bg-medium);
   padding: 4px 10px;
   border-radius: 12px;
   font-size: 0.9rem;

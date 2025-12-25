@@ -30,8 +30,8 @@ export default function Profile() {
 
   // Text-to-Speech function
   const speakDetections = (detections, sessionId) => {
-    if (!('speechSynthesis' in window)) {
-      alert('Your browser does not support text-to-speech');
+    if (!("speechSynthesis" in window)) {
+      alert("Your browser does not support text-to-speech");
       return;
     }
 
@@ -39,15 +39,20 @@ export default function Profile() {
     window.speechSynthesis.cancel();
 
     // Build speech text from all detections
-    const speechText = detections.map(det => 
-      `${det.word} with ${Math.round(det.confidence * 100)} percent confidence`
-    ).join(', ');
+    const speechText = detections
+      .map(
+        (det) =>
+          `${det.word} with ${Math.round(
+            det.confidence * 100
+          )} percent confidence`
+      )
+      .join(", ");
 
     const utterance = new SpeechSynthesisUtterance(speechText);
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
-    utterance.lang = 'en-US';
+    utterance.lang = "en-US";
 
     utterance.onstart = () => setSpeakingSessionId(sessionId);
     utterance.onend = () => setSpeakingSessionId(null);
@@ -106,9 +111,12 @@ export default function Profile() {
 
       // Fetch fresh user data from backend
       const freshUser = await apiService.getCurrentUser();
-      
-      console.log('Fresh user data:', freshUser);
-      console.log('Total detection sessions:', freshUser.total_detection_sessions);
+
+      console.log("Fresh user data:", freshUser);
+      console.log(
+        "Total detection sessions:",
+        freshUser.total_detection_sessions
+      );
 
       // Update state with fresh data
       setUser((prevUser) => ({
@@ -129,8 +137,8 @@ export default function Profile() {
       });
 
       // Fetch detection history from database
-      const history = await apiService.request('/detection-history/', {
-        method: 'GET'
+      const history = await apiService.request("/detection-history/", {
+        method: "GET",
       });
       setDetectionHistory(history);
 
@@ -151,17 +159,19 @@ export default function Profile() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this detection session?")) {
+    if (
+      window.confirm("Are you sure you want to delete this detection session?")
+    ) {
       try {
         // Optimistic update - remove from UI immediately
         setDetectionHistory((prev) => prev.filter((item) => item.id !== id));
 
         // Call backend to actually delete
         await apiService.request(`/detection-history/${id}`, {
-          method: 'DELETE'
+          method: "DELETE",
         });
-        
-        alert('Detection history deleted successfully!');
+
+        alert("Detection history deleted successfully!");
       } catch (error) {
         console.error("Error deleting detection:", error);
         // Revert on error - refresh the list
@@ -237,7 +247,9 @@ export default function Profile() {
                 disabled={refreshing}
                 title="Refresh profile data"
               >
-                <FaSync className={`btn-icon ${refreshing ? "spinning" : ""}`} />
+                <FaSync
+                  className={`btn-icon ${refreshing ? "spinning" : ""}`}
+                />
                 {refreshing ? "Refreshing..." : "Refresh"}
               </button>
               <button className="logout-btn" onClick={handleLogout}>
@@ -281,21 +293,21 @@ export default function Profile() {
           </div>
         </div>
       )}
-      
+
       {/* Guest Info Banner */}
       {authService.isGuest() && (
         <div className="guest-info-banner">
           <p>
             You're browsing as a guest.{" "}
-            <span 
-              className="guest-action-link" 
+            <span
+              className="guest-action-link"
               onClick={handleLogout}
               role="button"
               tabIndex={0}
             >
               Login or register
-            </span>
-            {" "}to use detection and save your progress!
+            </span>{" "}
+            to use detection and save your progress!
           </p>
         </div>
       )}
@@ -313,92 +325,107 @@ export default function Profile() {
             </p>
           </div>
 
-        {detectionHistory.length === 0 ? (
-          <div className="empty-state">
-            <FaHandPaper className="empty-icon" />
-            <p className="empty-text">No detection history yet</p>
-            <p className="empty-subtext">
-              Start detecting ASL gestures and save your sessions!
-            </p>
-          </div>
-        ) : (
-          <div className="history-grid">
-            {detectionHistory.map((item) => (
-              <div key={item.id} className="history-card">
-                <div className="card-header">
-                  <div className="session-info">
-                    <h3 className="session-name">{item.session_name || `Session ${item.id}`}</h3>
-                    <span className="session-date">{formatDate(item.created_at)}</span>
+          {detectionHistory.length === 0 ? (
+            <div className="empty-state">
+              <FaHandPaper className="empty-icon" />
+              <p className="empty-text">No detection history yet</p>
+              <p className="empty-subtext">
+                Start detecting ASL gestures and save your sessions!
+              </p>
+            </div>
+          ) : (
+            <div className="history-grid">
+              {detectionHistory.map((item) => (
+                <div key={item.id} className="history-card">
+                  <div className="card-header">
+                    <div className="session-info">
+                      <h3 className="session-name">
+                        {item.session_name || `Session ${item.id}`}
+                      </h3>
+                      <span className="session-date">
+                        {formatDate(item.created_at)}
+                      </span>
+                    </div>
+                    <button
+                      className="delete-btn"
+                      onClick={() => handleDelete(item.id)}
+                      title="Delete session"
+                    >
+                      <FaTrash />
+                    </button>
                   </div>
-                  <button
-                    className="delete-btn"
-                    onClick={() => handleDelete(item.id)}
-                    title="Delete session"
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
 
-                <div className="card-body">
-                  <div className="info-row">
-                    <span className="label">Total Detections:</span>
-                    <span className="value">{item.total_detections}</span>
-                  </div>
-                  <div className="detections-preview">
-                    <span className="label">Detected Gestures:</span>
-                    <div className="gesture-list">
-                      {item.detections.slice(0, 3).map((det, idx) => (
-                        <span key={idx} className="gesture-badge">
-                          {det.word} ({Math.round(det.confidence * 100)}%)
-                        </span>
-                      ))}
-                      {item.detections.length > 3 && (
-                        <span className="more-badge">+{item.detections.length - 3} more</span>
-                      )}
+                  <div className="card-body">
+                    <div className="info-row">
+                      <span className="label">Total Detections:</span>
+                      <span className="value">{item.total_detections}</span>
+                    </div>
+                    <div className="detections-preview">
+                      <span className="label">Detected Gestures:</span>
+                      <div className="gesture-list">
+                        {item.detections.slice(0, 3).map((det, idx) => (
+                          <span key={idx} className="gesture-badge">
+                            {det.word} ({Math.round(det.confidence * 100)}%)
+                          </span>
+                        ))}
+                        {item.detections.length > 3 && (
+                          <span className="more-badge">
+                            +{item.detections.length - 3} more
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="card-footer">
-                  <button
-                    className="action-btn play-btn"
-                    onClick={() => speakDetections(item.detections, item.id)}
-                    disabled={speakingSessionId === item.id}
-                  >
-                    <FaVolumeUp className="btn-icon" />
-                    {speakingSessionId === item.id ? 'Speaking...' : 'Play Audio'}
-                  </button>
-                  <button
-                    className="action-btn"
-                    onClick={() => setSelectedVideo(item)}
-                  >
-                    <FaPlay className="btn-icon" />
-                    View Details
-                  </button>
-                  <button 
-                    className="action-btn"
-                    onClick={() => {
-                      const logText = item.detections.map(d => 
-                        `${d.word} (${Math.round(d.confidence * 100)}%)`
-                      ).join('\n');
-                      const element = document.createElement("a");
-                      const file = new Blob([logText], {type: 'text/plain'});
-                      element.href = URL.createObjectURL(file);
-                      element.download = `detection_${item.id}_${new Date(item.created_at).toLocaleDateString()}.txt`;
-                      document.body.appendChild(element);
-                      element.click();
-                      document.body.removeChild(element);
-                    }}
-                  >
-                    <FaDownload className="btn-icon" />
-                    Download
-                  </button>
+                  <div className="card-footer">
+                    <button
+                      className="action-btn play-btn"
+                      onClick={() => speakDetections(item.detections, item.id)}
+                      disabled={speakingSessionId === item.id}
+                    >
+                      <FaVolumeUp className="btn-icon" />
+                      {speakingSessionId === item.id
+                        ? "Speaking..."
+                        : "Play Audio"}
+                    </button>
+                    <button
+                      className="action-btn"
+                      onClick={() => setSelectedVideo(item)}
+                    >
+                      <FaPlay className="btn-icon" />
+                      View Details
+                    </button>
+                    <button
+                      className="action-btn"
+                      onClick={() => {
+                        const logText = item.detections
+                          .map(
+                            (d) =>
+                              `${d.word} (${Math.round(d.confidence * 100)}%)`
+                          )
+                          .join("\n");
+                        const element = document.createElement("a");
+                        const file = new Blob([logText], {
+                          type: "text/plain",
+                        });
+                        element.href = URL.createObjectURL(file);
+                        element.download = `detection_${item.id}_${new Date(
+                          item.created_at
+                        ).toLocaleDateString()}.txt`;
+                        document.body.appendChild(element);
+                        element.click();
+                        document.body.removeChild(element);
+                      }}
+                    >
+                      <FaDownload className="btn-icon" />
+                      Download
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
       </GuestRestriction>
 
       {/* Details Modal */}
@@ -406,7 +433,9 @@ export default function Profile() {
         <div className="modal" onClick={() => setSelectedVideo(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">{selectedVideo.session_name || `Session ${selectedVideo.id}`}</h3>
+              <h3 className="modal-title">
+                {selectedVideo.session_name || `Session ${selectedVideo.id}`}
+              </h3>
               <button
                 className="close-btn"
                 onClick={() => setSelectedVideo(null)}
@@ -419,7 +448,8 @@ export default function Profile() {
                 <strong>Date:</strong> {formatDate(selectedVideo.created_at)}
               </div>
               <div className="modal-info-row">
-                <strong>Total Detections:</strong> {selectedVideo.total_detections}
+                <strong>Total Detections:</strong>{" "}
+                {selectedVideo.total_detections}
               </div>
               <div className="modal-detections">
                 <h4>All Detected Gestures:</h4>
@@ -427,7 +457,9 @@ export default function Profile() {
                   {selectedVideo.detections.map((det, idx) => (
                     <div key={idx} className="detection-row">
                       <span className="detection-word">{det.word}</span>
-                      <span className="detection-confidence">{Math.round(det.confidence * 100)}%</span>
+                      <span className="detection-confidence">
+                        {Math.round(det.confidence * 100)}%
+                      </span>
                     </div>
                   ))}
                 </div>

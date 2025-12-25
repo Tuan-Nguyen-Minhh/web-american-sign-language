@@ -1,3 +1,59 @@
+:root {
+  /* --- BẢNG MÀU GỐC (LIGHT MODE) --- */
+  /* Background colors - Beige Palette */
+  --bg-light: #F9F8F6;
+  --bg-medium: #EFE9E3;
+  --bg-dark: #D9CFC7;
+  --bg-darker: #C9B59C;
+
+  /* Text & Accent Colors */
+  --primary-color: #635985;
+  /* Tím đậm (Màu chính) */
+  --hover-color: #443C68;
+  --text-primary: #18122B;
+  /* Đổi tên --text-dark thành --text-primary để dễ quản lý */
+  --text-secondary: #393053;
+
+  /* Utility colors */
+  --border-color: #D9CFC7;
+  --dark-border-color: #C9B59C;
+  --shadow-color: rgba(24, 18, 43, 0.1);
+  --hover-shadow-color: rgba(24, 18, 43, 0.2);
+  --card-bg: #FFFFFF;
+
+  /* Layout variables */
+  --padding-x: 24px;
+  --padding-y: 16px;
+  --font-family: "Josefin Sans", sans-serif;
+  --font-weight-bold: 700;
+  --font-size-lg: 1.125rem;
+}
+
+
+.dark {
+  /* Ghi đè màu nền sang tối */
+  --bg-light: #181818;
+  --bg-medium: #222222;
+  --bg-dark: #333333;
+  --bg-darker: #4a4a4a;
+
+  /* Ghi đè màu Card */
+  --card-bg: #2a2a2a;
+  --border-color: #444;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+
+  /* Ghi đè màu chữ sang sáng (FIX LỖI KHÓ NHÌN) */
+  --text-primary: #F0F0F0;
+  /* Trắng xám */
+  --text-secondary: #B0B0B0;
+
+  /* Ghi đè màu Link/Primary sang màu sáng để tương phản */
+  --primary-color: #D4C9FF;
+  /* Tím phấn sáng */
+  --hover-color: #FFFFFF;
+  /* Trắng tinh khi hover */
+}
+
 /* LiveDetectionInterface.css */
 .webcam-container {
   max-width: 1200px;
@@ -47,7 +103,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background-color: #f8f9fa;
+  background-color: var(--bg-light);
   color: #6c757d;
 }
 
@@ -64,9 +120,9 @@
 .results-column {
   flex: 1;
   padding: 20px;
-  background-color: #f8f9fa;
+  background-color: var(--bg-light);
   border-radius: 10px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -82,11 +138,16 @@
 .btn-control {
   padding: 12px 20px;
   border: none;
-  border-radius: 5px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 16px;
   font-weight: bold;
   transition: all 0.3s ease;
+}
+.button-row {
+  display: flex;
+  gap: 10px;
+  flex: 1;
 }
 
 .btn-control:hover:not(:disabled) {
@@ -106,23 +167,23 @@
 
 .current-result h3 {
   margin: 0 0 10px 0;
-  color: #495057;
+  color: var(--text-primary);
   font-size: 1.2rem;
 }
 
 .detected-text {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #333;
+  color: var(--text-primary);
   margin: 10px 0;
   min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: white;
+  background-color: var(--bg-light);
   border-radius: 5px;
   padding: 10px;
-  border: 2px solid #dee2e6;
+  border: 2px solid var(--border-color);
 }
 
 .confidence-text {
@@ -136,24 +197,24 @@
 
 .detection-log h3 {
   margin: 0 0 10px 0;
-  color: #495057;
+  color: var(--primary-color);
   font-size: 1.1rem;
 }
 
 .log-box {
-  background-color: white;
+  background-color: var(--bg-light);
   border-radius: 5px;
   padding: 10px;
   max-height: 200px;
   overflow-y: auto;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--border-color);
 }
 
 .log-item {
   display: block;
   padding: 5px 0;
-  border-bottom: 1px solid #eee;
-  color: #333;
+  border-bottom: 1px solid var(--bg-light);
+  color: var(--text-primary);
 }
 
 .log-item:last-child {
@@ -161,25 +222,19 @@
 }
 
 .log-more {
-  color: #6c757d;
+  color: var(--primary-color);
   font-style: italic;
   font-size: 0.9rem;
 }
 
 .log-empty {
-  color: #6c757d;
+  color: var(--primary-color);
   font-style: italic;
   text-align: center;
   padding: 20px;
 }
 
-.connection-status {
-  background-color: white;
-  padding: 15px;
-  border-radius: 5px;
-  border: 1px solid #dee2e6;
-  margin-top: 10px;
-}
+
 
 .status-row {
   display: flex;
