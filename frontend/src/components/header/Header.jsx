@@ -1,12 +1,13 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faHands } from "@fortawesome/free-solid-svg-icons";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { TbLogout } from "react-icons/tb";
 import { authService } from "../../services/authService";
 import { isAdmin } from "../../utils/roleUtils";
 import "./header.css"; 
 
 export default function Header({ isDarkMode, toggleTheme }) {
+  const location = useLocation();
   const handleLogout = () => {
     authService.logout();
     window.location.href = "/login"; 
@@ -14,6 +15,11 @@ export default function Header({ isDarkMode, toggleTheme }) {
 
   const isAuthenticated = authService.isAuthenticated();
   const currentUser = authService.getUser();
+
+  // Helper function to check if link is active
+  const isActiveLink = (path) => {
+    return location.pathname === path;
+  };
 
   return (
     <header className="header" style={{
@@ -29,27 +35,32 @@ export default function Header({ isDarkMode, toggleTheme }) {
         </Link>
         <nav className="nav">
           <ul>
-            <li>
-              <Link to="/" className="nav-link">
-                Home
-              </Link>
-            </li>
-            <li>
-              <Link to="/about" className="nav-link">
-                About
-              </Link>
-            </li>
-            <li>
-              <Link to="/contribute" className="nav-link">
-                Contribute
-              </Link>
-            </li>
+            {/* Hide Home, About, Contribute for admins */}
+            {!isAdmin(currentUser) && (
+              <>
+                <li>
+                  <Link to="/" className="nav-link" style={{ fontWeight: isActiveLink('/') ? 'bold' : 'normal' }}>
+                    Home
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/about" className="nav-link" style={{ fontWeight: isActiveLink('/about') ? 'bold' : 'normal' }}>
+                    About
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/contribute" className="nav-link" style={{ fontWeight: isActiveLink('/contribute') ? 'bold' : 'normal' }}>
+                    Contribute
+                  </Link>
+                </li>
+              </>
+            )}
 
             {/* Admin Dashboard Link - Only visible for admins */}
             {isAuthenticated && isAdmin(currentUser) && (
               <li>
-                <Link to="/admin" className="nav-link" style={{color: 'var(--accent-color)', fontWeight: 'bold'}}>
-                  Admin
+                <Link to="/admin" className="nav-link" style={{color: 'var(--accent-color)', fontWeight: isActiveLink('/admin') ? 'bold' : 'normal'}}>
+                  Admin Dashboard
                 </Link>
               </li>
             )}
@@ -81,11 +92,14 @@ export default function Header({ isDarkMode, toggleTheme }) {
                     <TbLogout onClick={handleLogout} style={{cursor: 'pointer', color: 'var(--primary-color)'}} />
                   </li>
                 )}
-                <li className="nav-item">
-                  <Link to="/profile" className="nav-link">
-                    <FontAwesomeIcon icon={faUser} />
-                  </Link>
-                </li>
+                {/* Hide Profile icon for admins */}
+                {!isAdmin(currentUser) && (
+                  <li className="nav-item">
+                    <Link to="/profile" className="nav-link">
+                      <FontAwesomeIcon icon={faUser} />
+                    </Link>
+                  </li>
+                )}
               </>
             ) : (
               <li className="nav-item">
