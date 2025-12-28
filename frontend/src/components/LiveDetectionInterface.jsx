@@ -1,7 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import Webcam from "react-webcam";
 import apiService from "../services/apiService";
+import { authService } from "../services/authService";
 import { useWebSocketDetection } from "../hooks/useWebSocketDetection";
+import GuestRestriction from "./guest/GuestRestriction";
 import "./LiveDetectionInterface.css";
 
 const CAPTURE_INTERVAL = 25; // Send frames every 50ms (20 FPS with WebSocket)
@@ -41,6 +43,7 @@ const LiveDetectionInterface = () => {
   const [detections, setDetections] = useState([]);
   const [useWebSocket, setUseWebSocket] = useState(true); // Toggle between WS and HTTP
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [showGuestModal, setShowGuestModal] = useState(false);
   const isSending = useRef(false);
 
   // WebSocket hook
@@ -334,6 +337,12 @@ const LiveDetectionInterface = () => {
   const handleSave = async () => {
     if (!detectionLog.length) return;
 
+    // Check if user is a guest
+    if (authService.isGuest()) {
+      setShowGuestModal(true);
+      return;
+    }
+
     try {
       // Save to database
       const sessionName = `Detection Session ${new Date().toLocaleString()}`;
@@ -471,6 +480,38 @@ const LiveDetectionInterface = () => {
           </div>
         </div>
       </div>
+
+      {/* Guest Restriction Modal */}
+      {showGuestModal && (
+        <div className="guest-modal-overlay" onClick={() => setShowGuestModal(false)}>
+          <div className="guest-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="guest-modal-icon">🔒</div>
+            <h2>Authentication Required</h2>
+            <p>
+              You need to <strong>login</strong> or <strong>register</strong> to save detection history.
+            </p>
+            <p className="guest-modal-note">
+              Guest users can use detection features, but cannot save their progress.
+            </p>
+            <div className="guest-modal-actions">
+              <button
+                className="btn-modal-login"
+                onClick={() => {
+                  authService.logout();
+                }}
+              >
+                Login / Register
+              </button>
+              <button
+                className="btn-modal-cancel"
+                onClick={() => setShowGuestModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

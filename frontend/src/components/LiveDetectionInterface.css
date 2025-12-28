@@ -268,6 +268,104 @@
   border-radius: 3px;
 }
 
+/* Guest Modal Styles (for Save button popup) */
+.guest-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.guest-modal-content {
+  text-align: center;
+  max-width: 500px;
+  padding: 3rem 2rem;
+  background: var(--bg-light, #f9f9f9);
+  border: 2px solid var(--border-color, #e0e0e0);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.guest-modal-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.guest-modal-content h2 {
+  color: var(--text-primary, #333);
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+}
+
+.guest-modal-content p {
+  color: var(--text-secondary, #333);
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.guest-modal-note {
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--text-muted, #888);
+  margin-top: 1.5rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: var(--bg-medium, #f0f0f0);
+  border-radius: 8px;
+}
+
+.guest-modal-actions {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.btn-modal-login {
+  padding: 12px 32px;
+  background: var(--primary-color, #635985);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(99, 89, 133, 0.3);
+}
+
+.btn-modal-login:hover {
+  background: var(--hover-color, #443C68);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(99, 89, 133, 0.4);
+}
+
+.btn-modal-cancel {
+  padding: 12px 32px;
+  background: var(--bg-medium, #EFE9E3);
+  color: var(--text-primary, #333);
+  border: 2px solid var(--border-color, #D9CFC7);
+  border-radius: 25px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-cancel:hover {
+  background: var(--bg-dark, #D9CFC7);
+  transform: translateY(-2px);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .webcam-layout {
@@ -285,5 +383,9 @@
   
   .control-buttons {
     gap: 8px;
+  }
+
+  .guest-modal-actions {
+    flex-direction: column;
   }
 }
