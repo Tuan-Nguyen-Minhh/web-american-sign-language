@@ -10,12 +10,76 @@ import {
   FaHandPaper,
   FaSync,
   FaVolumeUp,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../../services/authService";
 import apiService from "../../services/apiService";
 import GuestRestriction from "../guest/GuestRestriction";
 import "./profile.css";
+
+// Toast Notification Component
+const Toast = ({ message, type, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`toast toast-${type}`}>
+      <div className="toast-icon">{type === "success" ? "✓" : "✕"}</div>
+      <div className="toast-content">
+        <p className="toast-message">{message}</p>
+      </div>
+      <button className="toast-close" onClick={onClose}>
+        ×
+      </button>
+    </div>
+  );
+};
+
+// Delete Confirmation Modal Component
+const DeleteConfirmModal = ({ session, onConfirm, onCancel }) => {
+  return (
+    <div className="delete-modal-overlay" onClick={onCancel}>
+      <div
+        className="delete-modal-content"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="delete-modal-icon">
+          <FaExclamationTriangle />
+        </div>
+        <h2>Delete Detection Session?</h2>
+        <p className="delete-modal-session-name">
+          "{session.session_name || `Session ${session.id}`}"
+        </p>
+        <p className="delete-modal-warning">
+          This action cannot be undone. All detection data from this session
+          will be permanently deleted.
+        </p>
+        <div className="delete-modal-stats">
+          <span>
+            <strong>{session.total_detections}</strong> detections
+          </span>
+          <span>•</span>
+          <span>
+            Created {new Date(session.created_at).toLocaleDateString()}
+          </span>
+        </div>
+        <div className="delete-modal-actions">
+          <button className="btn-modal-delete" onClick={onConfirm}>
+            <FaTrash /> Delete Session
+          </button>
+          <button className="btn-modal-cancel" onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -27,18 +91,27 @@ export default function Profile() {
   const [detectionHistory, setDetectionHistory] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [speakingSessionId, setSpeakingSessionId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // For delete confirmation
+  const [toast, setToast] = useState(null);
+
+  // Toast helper
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+  };
+
+  const hideToast = () => {
+    setToast(null);
+  };
 
   // Text-to-Speech function
   const speakDetections = (detections, sessionId) => {
     if (!("speechSynthesis" in window)) {
-      alert("Your browser does not support text-to-speech");
+      showToast("Your browser does not support text-to-speech", "error");
       return;
     }
 
-    // Cancel any ongoing speech
     window.speechSynthesis.cancel();
 
-    // Build speech text from all detections
     const speechText = detections
       .map(
         (det) =>
@@ -65,16 +138,13 @@ export default function Profile() {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        // STEP 1: Load cached data immediately (Fast UX)
         const cachedUser = authService.getUser();
 
         if (!cachedUser) {
-          // Not logged in - redirect
           navigate("/login");
           return;
         }
 
-        // Show cached data immediately
         setUser({
           name: cachedUser.name,
           email: cachedUser.email,
@@ -82,10 +152,9 @@ export default function Profile() {
           joinDate: cachedUser.created_at || new Date().toISOString(),
           totalDetections: 0,
         });
-        setLoading(false); // Remove loading spinner
+        setLoading(false);
 
-        // STEP 2: Fetch fresh data in background
-        await refreshUserData(false); // Don't show loading spinner
+        await refreshUserData(false);
       } catch (err) {
         console.error("Error loading profile:", err);
         setError("Failed to load profile");
@@ -103,32 +172,22 @@ export default function Profile() {
         setRefreshing(true);
       }
 
-      // Skip data fetching for guest users
       if (authService.isGuest()) {
         setRefreshing(false);
         return;
       }
 
-      // Fetch fresh user data from backend
       const freshUser = await apiService.getCurrentUser();
 
-      console.log("Fresh user data:", freshUser);
-      console.log(
-        "Total detection sessions:",
-        freshUser.total_detection_sessions
-      );
-
-      // Update state with fresh data
       setUser((prevUser) => ({
         ...prevUser,
         name: freshUser.name,
         email: freshUser.email,
         id: freshUser.id,
         joinDate: freshUser.created_at || prevUser.joinDate,
-        totalDetections: freshUser.total_detection_sessions || 0, // Total sessions (saved or not)
+        totalDetections: freshUser.total_detection_sessions || 0,
       }));
 
-      // Update localStorage cache
       authService.updateUserCache({
         id: freshUser.id,
         name: freshUser.name,
@@ -136,18 +195,14 @@ export default function Profile() {
         created_at: freshUser.created_at,
       });
 
-      // Fetch detection history from database
       const history = await apiService.request("/detection-history/", {
         method: "GET",
       });
       setDetectionHistory(history);
 
-      // Don't override totalDetections - it should come from freshUser.total_detection_sessions
-
       setError(null);
     } catch (err) {
       console.error("Error refreshing data:", err);
-      // Don't show error if we have cached data
       if (!user) {
         setError("Failed to refresh profile data");
       }
@@ -158,26 +213,26 @@ export default function Profile() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (
-      window.confirm("Are you sure you want to delete this detection session?")
-    ) {
-      try {
-        // Optimistic update - remove from UI immediately
-        setDetectionHistory((prev) => prev.filter((item) => item.id !== id));
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
 
-        // Call backend to actually delete
-        await apiService.request(`/detection-history/${id}`, {
-          method: "DELETE",
-        });
+    try {
+      // Optimistic update
+      setDetectionHistory((prev) =>
+        prev.filter((item) => item.id !== deleteTarget.id)
+      );
+      setDeleteTarget(null);
 
-        alert("Detection history deleted successfully!");
-      } catch (error) {
-        console.error("Error deleting detection:", error);
-        // Revert on error - refresh the list
-        alert("Failed to delete detection. Please try again.");
-        refreshUserData(false);
-      }
+      // Call backend
+      await apiService.request(`/detection-history/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+
+      showToast("Detection session deleted successfully!", "success");
+    } catch (error) {
+      console.error("Error deleting detection:", error);
+      showToast("Failed to delete detection. Please try again.", "error");
+      refreshUserData(false);
     }
   };
 
@@ -195,7 +250,6 @@ export default function Profile() {
     });
   };
 
-  // Initial loading state (only on first load)
   if (loading) {
     return (
       <div className="profile-container">
@@ -207,7 +261,6 @@ export default function Profile() {
     );
   }
 
-  // Error state (only if no cached data available)
   if (error && !user) {
     return (
       <div className="profile-container">
@@ -223,6 +276,20 @@ export default function Profile() {
 
   return (
     <div className="profile-container">
+      {/* Toast Notification */}
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={hideToast} />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <DeleteConfirmModal
+          session={deleteTarget}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
       {/* Header Section */}
       <div className="profile-header">
         <div className="header-content">
@@ -261,7 +328,6 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Show refresh indicator */}
       {refreshing && (
         <div className="refresh-indicator">
           <FaSync className="spinning" />
@@ -269,7 +335,6 @@ export default function Profile() {
         </div>
       )}
 
-      {/* Stats Cards */}
       {!authService.isGuest() && (
         <div className="stats-container">
           <div className="stat-card">
@@ -294,7 +359,6 @@ export default function Profile() {
         </div>
       )}
 
-      {/* Guest Info Banner */}
       {authService.isGuest() && (
         <div className="guest-info-banner">
           <p>
@@ -312,7 +376,6 @@ export default function Profile() {
         </div>
       )}
 
-      {/* History Section - Restricted for guests */}
       <GuestRestriction feature="detection history">
         <div className="history-section">
           <div className="section-header">
@@ -348,7 +411,7 @@ export default function Profile() {
                     </div>
                     <button
                       className="delete-btn"
-                      onClick={() => handleDelete(item.id)}
+                      onClick={() => setDeleteTarget(item)}
                       title="Delete session"
                     >
                       <FaTrash />

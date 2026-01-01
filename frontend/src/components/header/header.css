@@ -80,10 +80,40 @@
   color: var(--primary-color);
   text-decoration: none;
   transition: color 0.3s ease;
+  position: relative;
+  padding-bottom: 4px;
 }
 
 .nav-link:hover {
   color: var(--hover-color);
+}
+
+/* Active link style with underline */
+.nav-link.active {
+  font-weight: bold;
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    width: 0;
+    left: 50%;
+  }
+
+  to {
+    width: 100%;
+    left: 0;
+  }
 }
 
 .welcome-text {
@@ -109,4 +139,43 @@
 
 .nav-item svg:hover {
   color: var(--hover-color);
+}
+
+/* Theme toggle specific styles */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Toggle Switch Styles */
+.toggle-switch {
+  width: 60px;
+  height: 30px;
+  background-color: #cbd5e0;
+  border-radius: 30px;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch:hover {
+  opacity: 0.9;
+}
+
+/* When dark mode is active */
+.theme-toggle .toggle-switch {
+  background-color: var(--primary-color);
+}
+
+.toggle-slider {
+  width: 26px;
+  height: 26px;
+  background-color: var(--bg-light);
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  transition: left 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }

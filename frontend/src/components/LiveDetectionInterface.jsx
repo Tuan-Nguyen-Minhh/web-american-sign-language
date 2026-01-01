@@ -8,6 +8,29 @@ import "./LiveDetectionInterface.css";
 
 const CAPTURE_INTERVAL = 25; // Send frames every 50ms (20 FPS with WebSocket)
 
+// Toast Notification Component
+const Toast = ({ message, type, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 4000); // Auto close after 4 seconds
+
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`toast toast-${type}`}>
+      <div className="toast-icon">{type === "success" ? "✓" : "✕"}</div>
+      <div className="toast-content">
+        <p className="toast-message">{message}</p>
+      </div>
+      <button className="toast-close" onClick={onClose}>
+        ×
+      </button>
+    </div>
+  );
+};
+
 const DetectionLog = ({ log }) => (
   <div className="detection-log">
     <h3>History:</h3>
@@ -44,6 +67,7 @@ const LiveDetectionInterface = () => {
   const [useWebSocket, setUseWebSocket] = useState(true); // Toggle between WS and HTTP
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
+  const [toast, setToast] = useState(null); // Toast notification state
   const isSending = useRef(false);
 
   // WebSocket hook
@@ -56,52 +80,64 @@ const LiveDetectionInterface = () => {
     error: wsError,
   } = useWebSocketDetection();
 
-  // Text-to-Speech function using free Browser Web Speech API
-  const speakText = useCallback((text, confidenceValue) => {
-    // Check if browser supports speech synthesis
-    if (!("speechSynthesis" in window)) {
-      alert("Your browser does not support text-to-speech");
-      return;
-    }
-
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-
-    // Skip if text is empty or error message
-    if (
-      !text ||
-      text.includes("Error") ||
-      text === "Can't Detect" ||
-      text === "No gesture detected" ||
-      text === "Ready" ||
-      text === "Camera Off"
-    ) {
-      return;
-    }
-
-    // Build comprehensive speech text with all information
-    let speechText = text;
-
-    // Add confidence information if available
-    if (confidenceValue && confidenceValue > 0) {
-      const confidencePercent = Math.round(confidenceValue * 100);
-      speechText += ` with ${confidencePercent} percent confidence`;
-    }
-
-    // Create speech utterance
-    const utterance = new SpeechSynthesisUtterance(speechText);
-    utterance.rate = 1.0; // Speed (0.1 to 10)
-    utterance.pitch = 1.0; // Pitch (0 to 2)
-    utterance.volume = 1.0; // Volume (0 to 1)
-    utterance.lang = "en-US"; // Language
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    // Speak the text
-    window.speechSynthesis.speak(utterance);
+  // Toast notification helper
+  const showToast = useCallback((message, type = "success") => {
+    setToast({ message, type });
   }, []);
+
+  const hideToast = useCallback(() => {
+    setToast(null);
+  }, []);
+
+  // Text-to-Speech function using free Browser Web Speech API
+  const speakText = useCallback(
+    (text, confidenceValue) => {
+      // Check if browser supports speech synthesis
+      if (!("speechSynthesis" in window)) {
+        showToast("Your browser does not support text-to-speech", "error");
+        return;
+      }
+
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+
+      // Skip if text is empty or error message
+      if (
+        !text ||
+        text.includes("Error") ||
+        text === "Can't Detect" ||
+        text === "No gesture detected" ||
+        text === "Ready" ||
+        text === "Camera Off"
+      ) {
+        return;
+      }
+
+      // Build comprehensive speech text with all information
+      let speechText = text;
+
+      // Add confidence information if available
+      if (confidenceValue && confidenceValue > 0) {
+        const confidencePercent = Math.round(confidenceValue * 100);
+        speechText += ` with ${confidencePercent} percent confidence`;
+      }
+
+      // Create speech utterance
+      const utterance = new SpeechSynthesisUtterance(speechText);
+      utterance.rate = 1.0; // Speed (0.1 to 10)
+      utterance.pitch = 1.0; // Pitch (0 to 2)
+      utterance.volume = 1.0; // Volume (0 to 1)
+      utterance.lang = "en-US"; // Language
+
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+
+      // Speak the text
+      window.speechSynthesis.speak(utterance);
+    },
+    [showToast]
+  );
 
   // Helper function to speak button actions
   const speakButtonAction = useCallback((actionText) => {
@@ -355,17 +391,23 @@ const LiveDetectionInterface = () => {
       });
 
       speakButtonAction(`Saved ${detectionLog.length} detections to database`);
-      alert(
-        `Successfully saved ${detectionLog.length} detections to your profile!`
+      showToast(
+        `Successfully saved ${detectionLog.length} detections to your profile!`,
+        "success"
       );
     } catch (error) {
       console.error("Failed to save detection history:", error);
-      alert(`Failed to save: ${error.message}`);
+      showToast(`Failed to save: ${error.message}`, "error");
     }
   };
 
   return (
     <div className="webcam-container">
+      {/* Toast Notification */}
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={hideToast} />
+      )}
+
       <div className="webcam-layout">
         {/* CỘT TRÁI: CAMERA (2/3) */}
         <div className="webcam-column">
@@ -483,15 +525,23 @@ const LiveDetectionInterface = () => {
 
       {/* Guest Restriction Modal */}
       {showGuestModal && (
-        <div className="guest-modal-overlay" onClick={() => setShowGuestModal(false)}>
-          <div className="guest-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="guest-modal-overlay"
+          onClick={() => setShowGuestModal(false)}
+        >
+          <div
+            className="guest-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="guest-modal-icon">🔒</div>
             <h2>Authentication Required</h2>
             <p>
-              You need to <strong>login</strong> or <strong>register</strong> to save detection history.
+              You need to <strong>login</strong> or <strong>register</strong> to
+              save detection history.
             </p>
             <p className="guest-modal-note">
-              Guest users can use detection features, but cannot save their progress.
+              Guest users can use detection features, but cannot save their
+              progress.
             </p>
             <div className="guest-modal-actions">
               <button
