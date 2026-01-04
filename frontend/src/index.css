@@ -230,20 +230,7 @@ body {
 }
 
 /* Cột Kết quả */
-.results-column {
-  flex: 1; 
-  padding: 1rem;
-  border: 2px solid var(--bg-darker); 
-  border-radius: 8px;
-  background-color: var(--bg-light); 
-  
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between; /* Đẩy nút xuống đáy */
-  align-items: center; 
-  text-align: center;
-  min-height: 200px;
-}
+
 
 @media (max-width: 768px) {
   .webcam-layout { flex-direction: column; }

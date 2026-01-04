@@ -16,12 +16,30 @@ import {
 } from "react-router-dom";
 import LoginRegister from "./components/login/LoginRegister";
 import { authService } from "./services/authService";
+import { isAdmin } from "./utils/roleUtils";
 
 function ProtectedRoute({ children }) {
   const isAuthenticated = authService.isAuthenticated();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+// Route component that blocks admins from accessing user pages
+function AdminRestrictedRoute({ children }) {
+  const isAuthenticated = authService.isAuthenticated();
+  const currentUser = authService.getUser();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Redirect admins to admin dashboard
+  if (isAdmin(currentUser)) {
+    return <Navigate to="/admin" replace />;
   }
 
   return children;
@@ -85,25 +103,25 @@ function AppContent() {
           <Route
             path="/"
             element={
-              <ProtectedRoute>
+              <AdminRestrictedRoute>
                 <Home />
-              </ProtectedRoute>
+              </AdminRestrictedRoute>
             }
           />
           <Route
             path="/about"
             element={
-              <ProtectedRoute>
+              <AdminRestrictedRoute>
                 <About />
-              </ProtectedRoute>
+              </AdminRestrictedRoute>
             }
           />
           <Route
             path="/contribute"
             element={
-              <ProtectedRoute>
+              <AdminRestrictedRoute>
                 <Contribute />
-              </ProtectedRoute>
+              </AdminRestrictedRoute>
             }
           />
 
@@ -134,9 +152,9 @@ function AppContent() {
           <Route
             path="/profile"
             element={
-              <ProtectedRoute>
+              <AdminRestrictedRoute>
                 <Profile />
-              </ProtectedRoute>
+              </AdminRestrictedRoute>
             }
           />
         </Routes>

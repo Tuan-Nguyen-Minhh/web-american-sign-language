@@ -1,5 +1,57 @@
 :root {
+  /* --- BẢNG MÀU GỐC (LIGHT MODE) --- */
+  /* Background colors - Beige Palette */
+  --bg-light: #F9F8F6;
+  --bg-medium: #EFE9E3;
+  --bg-dark: #D9CFC7;
+  --bg-darker: #C9B59C;
+
+  /* Text & Accent Colors */
+  --primary-color: #635985;
+  /* Tím đậm (Màu chính) */
+  --hover-color: #443C68;
+  --text-primary: #18122B;
+  /* Đổi tên --text-dark thành --text-primary để dễ quản lý */
+  --text-secondary: #393053;
+
+  /* Utility colors */
+  --border-color: #D9CFC7;
+  --dark-border-color: #C9B59C;
+  --shadow-color: rgba(24, 18, 43, 0.1);
+  --hover-shadow-color: rgba(24, 18, 43, 0.2);
   --card-bg: #FFFFFF;
+
+  /* Layout variables */
+  --padding-x: 24px;
+  --padding-y: 16px;
+  --font-family: "Josefin Sans", sans-serif;
+  --font-weight-bold: 700;
+  --font-size-lg: 1.125rem;
+}
+
+
+.dark {
+  /* Ghi đè màu nền sang tối */
+  --bg-light: #181818;
+  --bg-medium: #222222;
+  --bg-dark: #333333;
+  --bg-darker: #4a4a4a;
+
+  /* Ghi đè màu Card */
+  --card-bg: #2a2a2a;
+  --border-color: #444;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+
+  /* Ghi đè màu chữ sang sáng (FIX LỖI KHÓ NHÌN) */
+  --text-primary: #F0F0F0;
+  /* Trắng xám */
+  --text-secondary: #B0B0B0;
+
+  /* Ghi đè màu Link/Primary sang màu sáng để tương phản */
+  --primary-color: #D4C9FF;
+  /* Tím phấn sáng */
+  --hover-color: #FFFFFF;
+  /* Trắng tinh khi hover */
 }
 
 .admin-dashboard {
@@ -9,14 +61,14 @@
 }
 
 .admin-dashboard h1 {
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 2rem;
 }
 
 .admin-dashboard h2 {
-  color: #555;
+  color: var(--text-secondary);
   margin-bottom: 1rem;
-  border-bottom: 2px solid #007bff;
+  border-bottom: 2px solid var(--border-color);
   padding-bottom: 0.5rem;
 }
 
@@ -33,12 +85,12 @@
 }
 
 .admin-stat-card {
-  background: var(--card-bg);
+  background: var(--bg-medium);
   padding: 1.5rem;
   border-radius: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   text-align: center;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
 }
 
 .admin-stat-card h3 {
@@ -68,23 +120,30 @@
 }
 
 .users-table thead {
-  background: #007bff;
-  color: white;
+  background: var(--bg-medium);
+  color: var(--text-primary);
 }
 
-.users-table th,
+.users-table th{
+    padding: 1rem;
+    text-align: left;
+    background-color: var(--bg-medium);
+  }
+
 .users-table td {
   padding: 1rem;
   text-align: left;
+  background-color: var(--bg-light);
 }
 
 .users-table tbody tr:hover {
-  background: #f8f9fa;
+  background: var(--bg-dark);
 }
 
-.users-table tbody tr:nth-child(even) {
-  background: #f9f9f9;
+.users-table tbody tr:nth-child {
+  background: var(--bg-light);
 }
+
 
 .role-badge {
   display: inline-block;
@@ -96,13 +155,13 @@
 }
 
 .role-badge.admin {
-  background: #dc3545;
-  color: white;
+  background: #da4352;
+  color: whitesmoke;
 }
 
 .role-badge.user {
-  background: #28a745;
-  color: white;
+  background: #4ebe68;
+  color: whitesmoke;
 }
 
 .actions {
@@ -123,8 +182,8 @@
 }
 
 .btn-view-history {
-  background: #17a2b8;
-  color: white;
+  background: #34b2c5;
+  color: whitesmoke;
 }
 
 .btn-view-history:hover {
@@ -132,7 +191,7 @@
 }
 
 .btn-change-role {
-  background: #007bff;
+  background: #437dba;
   color: white;
 }
 
@@ -141,7 +200,7 @@
 }
 
 .btn-delete {
-  background: #dc3545;
+  background: #e44959;
   color: white;
 }
 
@@ -177,7 +236,7 @@
 }
 
 .modal-content {
-  background: white;
+  background: var(--bg-light);
   border-radius: 12px;
   max-width: 800px;
   width: 100%;
@@ -197,7 +256,7 @@
 
 .modal-header h2 {
   margin: 0;
-  color: #333;
+  color: var(--text-primary);
   font-size: 1.5rem;
   border: none;
   padding: 0;
@@ -232,7 +291,7 @@
 .no-history {
   text-align: center;
   padding: 3rem;
-  color: #6c757d;
+  color: var(--text-secondary);
   font-size: 1.1rem;
 }
 
@@ -255,7 +314,7 @@
 
 .history-header h3 {
   margin: 0 0 0.5rem 0;
-  color: #007bff;
+  color: var(--text-primary);
   font-size: 1.2rem;
 }
 
@@ -264,7 +323,7 @@
   gap: 1rem;
   flex-wrap: wrap;
   font-size: 0.9rem;
-  color: #6c757d;
+  color: var(--text-secondary);
 }
 
 .history-date {
@@ -287,13 +346,13 @@
 }
 
 .detection-item {
-  background: white;
+  background: var(--bg-light);
   padding: 0.75rem;
   border-radius: 6px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--border-color);
   transition: all 0.3s ease;
 }
 
