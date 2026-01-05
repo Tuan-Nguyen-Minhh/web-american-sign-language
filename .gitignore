@@ -17,7 +17,8 @@ yarn-error.log*
 # ML / Model files
 # ======================
 *.h5
-
+*.onnx
+*.pt
 # ======================
 # Environment variables
 # ======================

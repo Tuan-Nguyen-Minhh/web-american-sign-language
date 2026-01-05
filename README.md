@@ -53,6 +53,14 @@ Mở 2 terminal cmd
 ```bash
 asl_env\Scripts\activate
 ```
+- Convert model to ONNX format
+```bash
+python convert_model_to_onnx.py
+```
+- Copy model to frontend (Windows PowerShell/CMD)
+```bash
+copy backend\detection\yolov8.onnx frontend\public\models\
+```
 - Chạy backend
 ```bash
 uvicorn backend.main:app --reload
@@ -62,6 +70,9 @@ uvicorn backend.main:app --reload
 - Vào folder frontend
 ```bash
 cd frontend
+```
+```bash
+npm install
 ```
 - Chạy frontend
 ```bash

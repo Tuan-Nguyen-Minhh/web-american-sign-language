@@ -2,11 +2,11 @@ import React, { useRef, useEffect, useState, useCallback } from "react";
 import Webcam from "react-webcam";
 import apiService from "../services/apiService";
 import { authService } from "../services/authService";
-import { useWebSocketDetection } from "../hooks/useWebSocketDetection";
+import { yoloModel } from "../utils/onnxModelLoader";
 import GuestRestriction from "./guest/GuestRestriction";
 import "./LiveDetectionInterface.css";
 
-const CAPTURE_INTERVAL = 25; // Send frames every 50ms (20 FPS with WebSocket)
+const CAPTURE_INTERVAL = 100; // Run inference every 100ms (10 FPS for local processing)
 
 // Toast Notification Component
 const Toast = ({ message, type, onClose }) => {
@@ -64,21 +64,12 @@ const LiveDetectionInterface = () => {
   const [isDetecting, setIsDetecting] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [detections, setDetections] = useState([]);
-  const [useWebSocket, setUseWebSocket] = useState(true); // Toggle between WS and HTTP
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [toast, setToast] = useState(null); // Toast notification state
+  const [modelLoaded, setModelLoaded] = useState(false);
+  const [modelLoading, setModelLoading] = useState(false);
   const isSending = useRef(false);
-
-  // WebSocket hook
-  const {
-    connect: connectWS,
-    disconnect: disconnectWS,
-    sendFrame,
-    setOnMessage,
-    isConnected: wsConnected,
-    error: wsError,
-  } = useWebSocketDetection();
 
   // Toast notification helper
   const showToast = useCallback((message, type = "success") => {
@@ -152,130 +143,124 @@ const LiveDetectionInterface = () => {
     window.speechSynthesis.speak(utterance);
   }, []);
 
-  // Handle WebSocket messages
+  // Load ONNX model on component mount
   useEffect(() => {
-    setOnMessage((data) => {
-      if (data.success) {
-        const { prediction, confidence, detections: apiDetections } = data;
+    const initModel = async () => {
+      setModelLoading(true);
+      showToast("Loading AI model...", "success");
+      
+      try {
+        console.log('🔄 Starting model load...');
+        const success = await yoloModel.loadModel();
+        console.log('Model load result:', success);
+        
+        if (success) {
+          setModelLoaded(true);
+          showToast("✅ AI model loaded successfully!", "success");
+          console.log('✅ Model loaded and ready');
+        } else {
+          setModelLoaded(false);
+          showToast("❌ Failed to load AI model. Check console for details.", "error");
+          console.error('❌ Model loading returned false');
+        }
+      } catch (error) {
+        console.error("Error loading model:", error);
+        setModelLoaded(false);
+        showToast(`Model loading error: ${error.message}`, "error");
+      } finally {
+        setModelLoading(false);
+      }
+    };
+    
+    initModel();
+    
+    // Cleanup on unmount
+    return () => {
+      yoloModel.unload();
+    };
+  }, []); // Run only once on mount
 
+  // Process frame locally using ONNX model
+  const captureAndDetect = useCallback(async () => {
+    if (!isDetecting || !webcamRef.current || !modelLoaded) return;
+    if (isSending.current) return; // Prevent concurrent processing
+    
+    try {
+      isSending.current = true;
+      
+      // Get video element
+      const video = webcamRef.current.video;
+      if (!video || video.readyState !== 4) {
+        isSending.current = false;
+        return;
+      }
+      
+      console.log('🎥 Running detection on video frame...');
+      
+      // Run local inference
+      const result = await yoloModel.detect(video);
+      
+      console.log('📦 Detection result:', result);
+      
+      if (result.success) {
+        const { prediction, confidence: conf, detections: apiDetections } = result;
+        
+        console.log('✅ Detections:', apiDetections);
+        
         // Update detections for bounding box drawing
         setDetections(apiDetections || []);
-
-        if (
-          confidence &&
-          confidence > 0.7 &&
-          prediction &&
-          prediction !== detectionLog[0]?.word
-        ) {
+        
+        // Update detection log if confidence is high enough
+        if (conf && conf > 0.7 && prediction && prediction !== detectionLog[0]?.word) {
           setDetectionLog((prevLog) => [
-            { word: prediction, confidence },
+            { word: prediction, confidence: conf },
             ...prevLog,
           ]);
         }
-
+        
         setTranslatedText(prediction || "Can't Detect");
-        setConfidence(confidence || 0);
-
+        setConfidence(conf || 0);
+        
         // Store last valid detection for speaking after stopping
         if (
           prediction &&
-          confidence > 0 &&
+          conf > 0 &&
           prediction !== "No gesture detected" &&
           prediction !== "Can't Detect"
         ) {
           setLastDetectedText(prediction);
-          setLastDetectedConfidence(confidence);
+          setLastDetectedConfidence(conf);
         }
-      } else if (data.error) {
-        console.error("Detection error:", data.error);
-        setTranslatedText(`Error: ${data.error}`);
-      }
-
-      isSending.current = false;
-    });
-  }, [setOnMessage, detectionLog]);
-
-  // Hàm xử lý chụp và gửi frame
-  const captureAndSend = useCallback(async () => {
-    if (!isDetecting || !webcamRef.current) return;
-
-    // Block only for HTTP requests, not for WebSocket
-    if (!useWebSocket && isSending.current) return;
-
-    const imageSrc = webcamRef.current.getScreenshot();
-    if (!imageSrc) return;
-
-    try {
-      // Remove data URL prefix for API (data:image/jpeg;base64,...)
-      const base64Data = imageSrc.split(",")[1];
-
-      if (useWebSocket && wsConnected) {
-        // WebSocket: Send frames continuously without blocking
-        // Backend will process them as fast as it can
-        sendFrame(base64Data);
       } else {
-        // HTTP: Wait for each response before sending next frame
-        isSending.current = true;
-
-        const data = await apiService.request("/detection/predict", {
-          method: "POST",
-          body: JSON.stringify({ image: base64Data }),
-        });
-
-        const { prediction, confidence, detections: apiDetections } = data;
-
-        setDetections(apiDetections || []);
-
-        if (
-          confidence &&
-          confidence > 0.7 &&
-          prediction &&
-          prediction !== detectionLog[0]?.word
-        ) {
-          setDetectionLog((prevLog) => [
-            { word: prediction, confidence },
-            ...prevLog,
-          ]);
-        }
-
-        setTranslatedText(prediction || "Can't Detect");
-        setConfidence(confidence || 0);
-
-        // Store last valid detection for speaking after stopping
-        if (
-          prediction &&
-          confidence > 0 &&
-          prediction !== "No gesture detected" &&
-          prediction !== "Can't Detect"
-        ) {
-          setLastDetectedText(prediction);
-          setLastDetectedConfidence(confidence);
-        }
-
-        isSending.current = false;
+        console.error("Detection error:", result.error);
       }
+      
     } catch (error) {
-      console.error("Detection error:", error);
+      console.error("Local detection error:", error);
       setTranslatedText(`Error: ${error.message}`);
-      setConfidence(0);
+    } finally {
       isSending.current = false;
     }
-  }, [isDetecting, detectionLog, useWebSocket, wsConnected, sendFrame]);
+  }, [isDetecting, detectionLog, modelLoaded]);
 
+  // Run detection at regular intervals
   useEffect(() => {
     let intervalId;
-    if (isDetecting) {
-      intervalId = setInterval(captureAndSend, CAPTURE_INTERVAL);
+    if (isDetecting && modelLoaded) {
+      intervalId = setInterval(captureAndDetect, CAPTURE_INTERVAL);
     }
-    return () => clearInterval(intervalId); // Dọn dẹp
-  }, [isDetecting, captureAndSend]);
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isDetecting, captureAndDetect, modelLoaded]);
 
   const handleStartStop = () => {
+    if (!modelLoaded) {
+      showToast("Please wait for the model to load", "error");
+      return;
+    }
+    
     if (!isDetecting) {
-      // Connect WebSocket when starting detection
-      if (useWebSocket && !wsConnected) {
-        connectWS();
-      }
       setTranslatedText("Start Detecting");
       setDetectionLog([]);
       speakButtonAction("Starting detection");
@@ -309,12 +294,11 @@ const LiveDetectionInterface = () => {
       setTranslatedText("Camera Off");
       setConfidence(0); // Reset confidence
       speakButtonAction("Camera turned off");
-
-      // Disconnect WebSocket
-      if (wsConnected) {
-        disconnectWS();
-      }
     } else {
+      if (!modelLoaded && !modelLoading) {
+        showToast("Model is still loading, please wait...", "error");
+        return;
+      }
       setIsCameraOn(true);
       setTranslatedText("Ready to detect");
       speakButtonAction("Camera turned on");
@@ -364,6 +348,7 @@ const LiveDetectionInterface = () => {
 
   // Draw detections when they update
   useEffect(() => {
+    console.log('🎨 Draw effect triggered - isDetecting:', isDetecting, 'isCameraOn:', isCameraOn, 'detections:', detections);
     if (isDetecting && isCameraOn) {
       drawDetections();
     }
