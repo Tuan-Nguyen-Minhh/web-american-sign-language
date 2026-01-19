@@ -9,7 +9,7 @@ class YOLOModelLoader {
   constructor() {
     this.session = null;
     this.modelPath = '/models/best.onnx'; // or best.onnx
-    this.inputSize = 640; // YOLOv8 standard input size
+    this.inputSize = 320; // Model input size (must match ONNX export)
     this.isLoaded = false;
   }
 
@@ -50,22 +50,61 @@ class YOLOModelLoader {
   }
 
   /**
-   * Preprocess image for YOLO model
+   * Letterbox preprocessing - maintains aspect ratio with padding
+   * Same logic as Python OpenCV version
+   */
+  letterbox(image, newShape = 320) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Get original dimensions
+    const originalWidth = image.width || image.videoWidth;
+    const originalHeight = image.height || image.videoHeight;
+    
+    // Calculate scaling ratio (same as Python)
+    const ratio = Math.min(newShape / originalHeight, newShape / originalWidth);
+    
+    // Calculate new unpadded size
+    const newUnpadW = Math.round(originalWidth * ratio);
+    const newUnpadH = Math.round(originalHeight * ratio);
+    
+    // Calculate padding
+    const dw = (newShape - newUnpadW) / 2;
+    const dh = (newShape - newUnpadH) / 2;
+    
+    // Set canvas to target size
+    canvas.width = newShape;
+    canvas.height = newShape;
+    
+    // Fill with gray padding (114, 114, 114)
+    ctx.fillStyle = 'rgb(114, 114, 114)';
+    ctx.fillRect(0, 0, newShape, newShape);
+    
+    // Draw resized image in center
+    ctx.drawImage(image, dw, dh, newUnpadW, newUnpadH);
+    
+    return {
+      canvas,
+      ratio,
+      dw,
+      dh,
+      originalWidth,
+      originalHeight
+    };
+  }
+
+  /**
+   * Preprocess image for YOLO model with letterbox
    * @param {HTMLImageElement|HTMLVideoElement|HTMLCanvasElement} image 
    * @returns {Object} Preprocessed tensor and metadata
    */
   preprocessImage(image) {
     try {
-      // Create canvas to resize image
-      const canvas = document.createElement('canvas');
-      canvas.width = this.inputSize;
-      canvas.height = this.inputSize;
-      const ctx = canvas.getContext('2d');
-      
-      // Draw and resize image
-      ctx.drawImage(image, 0, 0, this.inputSize, this.inputSize);
+      // Apply letterbox preprocessing
+      const { canvas, ratio, dw, dh, originalWidth, originalHeight } = this.letterbox(image, this.inputSize);
       
       // Get image data
+      const ctx = canvas.getContext('2d');
       const imageData = ctx.getImageData(0, 0, this.inputSize, this.inputSize);
       const pixels = imageData.data;
       
@@ -89,8 +128,11 @@ class YOLOModelLoader {
       
       return {
         tensor,
-        originalWidth: image.width || image.videoWidth,
-        originalHeight: image.height || image.videoHeight
+        originalWidth,
+        originalHeight,
+        ratio,
+        dw,
+        dh
       };
     } catch (error) {
       console.error('Error preprocessing image:', error);
@@ -100,49 +142,41 @@ class YOLOModelLoader {
 
   /**
    * Post-process YOLO output to extract detections
+   * Matches Python OpenCV logic with letterbox reversal
    * @param {Object} output - Model output tensor
    * @param {number} originalWidth - Original image width
    * @param {number} originalHeight - Original image height
-   * @param {number} confThreshold - Confidence threshold (default 0.3)
+   * @param {number} ratio - Letterbox scaling ratio
+   * @param {number} dw - Letterbox padding width
+   * @param {number} dh - Letterbox padding height
+   * @param {number} confThreshold - Confidence threshold (default 0.5)
    * @returns {Array} Array of detection objects
    */
-  postprocessOutput(output, originalWidth, originalHeight, confThreshold = 0.3) {
+  postprocessOutput(output, originalWidth, originalHeight, ratio, dw, dh, confThreshold = 0.5) {
     try {
       const outputData = output.data;
       const detections = [];
       
       // Debug: Log output shape
       console.log('Output shape:', output.dims);
-      console.log('Output data length:', outputData.length);
       
-      // YOLOv8 output format analysis
+      // YOLOv8 output format: [1, rows, numPredictions]
       const dims = output.dims;
-      const rows = dims[1]; // Number of values per detection
-      const numPredictions = dims[2]; // Number of predictions (8400)
+      const rows = dims[1]; // Number of values per detection (4 + num_classes)
+      const numPredictions = dims[2]; // Number of predictions
       
       console.log(`YOLOv8 output: ${rows} values per detection, ${numPredictions} total predictions`);
       
-      // For YOLOv8: rows = 4 (bbox) + num_classes
-      // Single class: rows = 5 (x, y, w, h, class0_score)
-      // Multi class: rows = 84 (x, y, w, h, + 80 class scores for COCO)
       const numClasses = rows - 4;
       console.log(`Number of classes: ${numClasses}`);
       
-      // Sample first few predictions for debugging
-      console.log('Sample prediction 0:', {
-        x: outputData[0],
-        y: outputData[numPredictions],
-        w: outputData[2 * numPredictions],
-        h: outputData[3 * numPredictions],
-        score: outputData[4 * numPredictions]
-      });
-      
+      // Process each prediction
       for (let i = 0; i < numPredictions; i++) {
-        // Get bbox coordinates (in XYXY or XYWH format depending on export)
-        const x = outputData[0 * numPredictions + i];
-        const y = outputData[1 * numPredictions + i];
-        const w = outputData[2 * numPredictions + i];
-        const h = outputData[3 * numPredictions + i];
+        // Get bbox coordinates (center x, center y, width, height)
+        let centerX = outputData[0 * numPredictions + i];
+        let centerY = outputData[1 * numPredictions + i];
+        let width = outputData[2 * numPredictions + i];
+        let height = outputData[3 * numPredictions + i];
         
         // Get class scores
         let maxScore = 0;
@@ -158,22 +192,24 @@ class YOLOModelLoader {
         
         // Filter by confidence threshold
         if (maxScore >= confThreshold) {
-          // Convert to corner coordinates and scale to original image size
-          const scaleX = originalWidth / this.inputSize;
-          const scaleY = originalHeight / this.inputSize;
+          // Reverse letterbox transform (same as Python code)
+          // 1. Remove padding
+          centerX = (centerX - dw) / ratio;
+          centerY = (centerY - dh) / ratio;
+          width = width / ratio;
+          height = height / ratio;
           
-          // Check if coordinates are already in pixel space or normalized
-          // YOLOv8 ONNX typically outputs in pixel space (0-640)
-          const x1 = Math.max(0, Math.round((x - w / 2) * scaleX));
-          const y1 = Math.max(0, Math.round((y - h / 2) * scaleY));
-          const x2 = Math.min(originalWidth, Math.round((x + w / 2) * scaleX));
-          const y2 = Math.min(originalHeight, Math.round((y + h / 2) * scaleY));
+          // 2. Convert from center coordinates to corner coordinates
+          const x1 = Math.max(0, Math.round(centerX - width / 2));
+          const y1 = Math.max(0, Math.round(centerY - height / 2));
+          const x2 = Math.min(originalWidth, Math.round(centerX + width / 2));
+          const y2 = Math.min(originalHeight, Math.round(centerY + height / 2));
           
           detections.push({
             bbox: [x1, y1, x2, y2],
             confidence: maxScore,
             class: maxClass,
-            class_name: maxClass === 0 ? "hand" : `class_${maxClass}`
+            class_name: maxClass === 0 ? "Hand" : `class_${maxClass}`
           });
         }
       }
@@ -183,8 +219,8 @@ class YOLOModelLoader {
         console.log('Top 3 detections:', detections.slice(0, 3));
       }
       
-      // Apply NMS (Non-Maximum Suppression) to remove overlapping boxes
-      const finalDetections = this.applyNMS(detections, 0.45);
+      // Apply NMS (Non-Maximum Suppression)
+      const finalDetections = this.applyNMS(detections, 0.4); // NMS threshold 0.4 like Python
       console.log(`Final detections after NMS: ${finalDetections.length}`);
       if (finalDetections.length > 0) {
         console.log('Final top detection:', finalDetections[0]);
@@ -274,12 +310,15 @@ class YOLOModelLoader {
       const outputName = this.session.outputNames[0];
       const output = results[outputName];
       
-      // Post-process results
+      // Post-process results with letterbox parameters
       const detections = this.postprocessOutput(
         output,
         preprocessed.originalWidth,
         preprocessed.originalHeight,
-        0.15 // Very low threshold to see any detections
+        preprocessed.ratio,
+        preprocessed.dw,
+        preprocessed.dh,
+        0.5 // Confidence threshold (same as Python code)
       );
       
       return {

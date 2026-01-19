@@ -307,12 +307,18 @@ const LiveDetectionInterface = () => {
 
   // Draw bounding boxes on canvas overlay
   const drawDetections = useCallback(() => {
-    if (!canvasRef.current || !webcamRef.current || !isCameraOn) return;
+    if (!canvasRef.current || !webcamRef.current || !isCameraOn) {
+      console.log('❌ Canvas drawing skipped - missing refs or camera off');
+      return;
+    }
 
     const canvas = canvasRef.current;
     const video = webcamRef.current.video;
 
-    if (!video) return;
+    if (!video) {
+      console.log('❌ Video element not available');
+      return;
+    }
 
     const ctx = canvas.getContext("2d");
 
@@ -320,13 +326,21 @@ const LiveDetectionInterface = () => {
     canvas.width = video.videoWidth || video.clientWidth;
     canvas.height = video.videoHeight || video.clientHeight;
 
+    console.log('🎨 Canvas size:', canvas.width, 'x', canvas.height);
+    console.log('🎨 Drawing', detections.length, 'detections');
+
     // Clear previous drawings
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw bounding boxes
     detections.forEach((detection, index) => {
+      console.log(`Drawing detection ${index}:`, detection);
+      
       const [x1, y1, x2, y2] = detection.bbox;
       const confidence = detection.confidence;
+      const className = detection.class_name || 'hand';
+
+      console.log(`  Bbox: [${x1}, ${y1}, ${x2}, ${y2}], conf: ${confidence}`);
 
       // Draw bounding box
       ctx.strokeStyle = "#00ff00";
@@ -335,7 +349,7 @@ const LiveDetectionInterface = () => {
 
       // Draw confidence label background
       ctx.fillStyle = "rgba(0, 255, 0, 0.8)";
-      const text = `Hand ${index + 1}: ${(confidence * 100).toFixed(1)}%`;
+      const text = `${className}: ${(confidence * 100).toFixed(1)}%`;
       ctx.font = "16px Arial";
       const textMetrics = ctx.measureText(text);
       ctx.fillRect(x1, y1 - 25, textMetrics.width + 10, 25);
@@ -348,9 +362,18 @@ const LiveDetectionInterface = () => {
 
   // Draw detections when they update
   useEffect(() => {
-    console.log('🎨 Draw effect triggered - isDetecting:', isDetecting, 'isCameraOn:', isCameraOn, 'detections:', detections);
-    if (isDetecting && isCameraOn) {
+    console.log('🎨 Draw effect triggered:', {
+      isDetecting,
+      isCameraOn,
+      detectionsCount: detections.length,
+      detections
+    });
+    
+    if (isDetecting && isCameraOn && detections.length > 0) {
+      console.log('✅ Calling drawDetections()');
       drawDetections();
+    } else {
+      console.log('⏭️ Skipping draw - conditions not met');
     }
   }, [detections, drawDetections, isDetecting, isCameraOn]);
 
