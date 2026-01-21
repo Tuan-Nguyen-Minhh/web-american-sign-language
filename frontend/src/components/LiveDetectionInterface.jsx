@@ -70,6 +70,22 @@ const LiveDetectionInterface = () => {
   const holdDuration = 1500; // seconds hold time in milliseconds
   const [detectionLog, setDetectionLog] = useState([]);
   const [isDetecting, setIsDetecting] = useState(false);
+
+  // Helper function to process special commands
+  const processDetection = useCallback((prediction) => {
+    const lowerPred = prediction.toLowerCase();
+    
+    if (lowerPred === 'space') {
+      setAccumulatedText(prev => prev + ' ');
+    } else if (lowerPred === 'del') {
+      setAccumulatedText(prev => prev.slice(0, -1));
+    } else if (lowerPred === 'nothing') {
+      // Do nothing - don't add to accumulated text
+    } else {
+      // Regular letter - add it
+      setAccumulatedText(prev => prev + prediction);
+    }
+  }, []);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [detections, setDetections] = useState([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -187,7 +203,7 @@ const LiveDetectionInterface = () => {
                 if (letterPrediction !== lastPredictionRef.current) {
                   // Held for 2 seconds and not already added - confirm it!
                   console.log(`🎯 Confirmed letter: ${letterPrediction} (held for ${(holdTime/1000).toFixed(1)}s)`);
-                  setAccumulatedText(prev => prev + letterPrediction);
+                  processDetection(letterPrediction);
                   lastPredictionRef.current = letterPrediction;
                   
                   // Update detection log
@@ -386,7 +402,7 @@ const LiveDetectionInterface = () => {
                     if (letterPrediction !== lastPredictionRef.current) {
                       // Held for 2 seconds and not already added - confirm it!
                       console.log(`🎯 Confirmed letter: ${letterPrediction} (held for ${(holdTime/1000).toFixed(1)}s)`);
-                      setAccumulatedText(prev => prev + letterPrediction);
+                      processDetection(letterPrediction);
                       lastPredictionRef.current = letterPrediction;
                       
                       // Update detection log
