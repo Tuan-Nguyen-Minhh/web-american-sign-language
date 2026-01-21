@@ -3,6 +3,7 @@ import Webcam from "react-webcam";
 import apiService from "../services/apiService";
 import { authService } from "../services/authService";
 import { yoloModel } from "../utils/onnxModelLoader";
+import API_BASE_URL from "../config/api";
 import GuestRestriction from "./guest/GuestRestriction";
 import "./LiveDetectionInterface.css";
 
@@ -150,21 +151,16 @@ const LiveDetectionInterface = () => {
       showToast("Loading AI model...", "success");
       
       try {
-        console.log('🔄 Starting model load...');
         const success = await yoloModel.loadModel();
-        console.log('Model load result:', success);
         
         if (success) {
           setModelLoaded(true);
-          showToast("✅ AI model loaded successfully!", "success");
-          console.log('✅ Model loaded and ready');
+          showToast("AI model loaded successfully!", "success");
         } else {
           setModelLoaded(false);
-          showToast("❌ Failed to load AI model. Check console for details.", "error");
-          console.error('❌ Model loading returned false');
+          showToast("Failed to load AI model. Check console for details.", "error");
         }
       } catch (error) {
-        console.error("Error loading model:", error);
         setModelLoaded(false);
         showToast(`Model loading error: ${error.message}`, "error");
       } finally {
@@ -195,48 +191,115 @@ const LiveDetectionInterface = () => {
         return;
       }
       
-      console.log('🎥 Running detection on video frame...');
-      
       // Run local inference
       const result = await yoloModel.detect(video);
       
-      console.log('📦 Detection result:', result);
-      
-      if (result.success) {
-        const { prediction, confidence: conf, detections: apiDetections } = result;
+      if (result.success && result.detections && result.detections.length > 0) {
+        const apiDetections = result.detections;
         
-        console.log('✅ Detections:', apiDetections);
+        console.log('Hand detections:', apiDetections);
         
         // Update detections for bounding box drawing
-        setDetections(apiDetections || []);
+        setDetections(apiDetections);
         
-        // Update detection log if confidence is high enough
-        if (conf && conf > 0.7 && prediction && prediction !== detectionLog[0]?.word) {
-          setDetectionLog((prevLog) => [
-            { word: prediction, confidence: conf },
-            ...prevLog,
-          ]);
-        }
+        // Get the first detected hand and send to SVM for letter prediction
+        const handDetection = apiDetections[0];
+        let [x1, y1, x2, y2] = handDetection.bbox;
         
-        setTranslatedText(prediction || "Can't Detect");
-        setConfidence(conf || 0);
+        // Expand bounding box by 20% to capture full hand
+        const width = x2 - x1;
+        const height = y2 - y1;
+        const expandX = width * 0.2;
+        const expandY = height * 0.2;
         
-        // Store last valid detection for speaking after stopping
-        if (
-          prediction &&
-          conf > 0 &&
-          prediction !== "No gesture detected" &&
-          prediction !== "Can't Detect"
-        ) {
-          setLastDetectedText(prediction);
-          setLastDetectedConfidence(conf);
-        }
+        x1 = Math.max(0, x1 - expandX);
+        y1 = Math.max(0, y1 - expandY);
+        x2 = Math.min(video.videoWidth, x2 + expandX);
+        y2 = Math.min(video.videoHeight, y2 + expandY);
+        
+        // Update bounding box for display
+        apiDetections[0].bbox = [x1, y1, x2, y2];
+        setDetections(apiDetections);
+        
+        // TEST: Send FULL FRAME instead of crop to see if SVM works better
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Use full video frame dimensions
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Draw the full frame
+        ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        
+        console.log(`📸 Sending full frame: ${canvas.width}x${canvas.height} (testing if crop is the issue)`);
+        
+        // Convert to blob and send to SVM API
+        canvas.toBlob(async (blob) => {
+          try {
+            const file = new File([blob], 'hand.jpg', { type: 'image/jpeg' });
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Call SVM prediction API
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE_URL}/detection/predict-asl`, {
+              method: 'POST',
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+              body: formData
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Backend error: ${response.status}`);
+            }
+            
+            const svmResult = await response.json();
+            console.log('🔤 SVM prediction result:', svmResult);
+            
+            if (svmResult.status === 'success' && svmResult.prediction) {
+              const letterPrediction = svmResult.prediction;
+              const letterConfidence = svmResult.confidence;
+              
+              console.log(`✅ Predicted: ${letterPrediction} (${(letterConfidence * 100).toFixed(1)}%)`);
+              
+              // Update UI with letter prediction
+              setTranslatedText(letterPrediction);
+              setConfidence(letterConfidence);
+              
+              // Update detection log if confidence is high enough
+              if (letterConfidence > 0.7 && letterPrediction !== detectionLog[0]?.word) {
+                setDetectionLog((prevLog) => [
+                  { word: letterPrediction, confidence: letterConfidence },
+                  ...prevLog,
+                ]);
+              }
+              
+              // Store last valid detection
+              setLastDetectedText(letterPrediction);
+              setLastDetectedConfidence(letterConfidence);
+            } else if (svmResult.status === 'no_hand_detected') {
+              console.log('⚠️ Backend: No hand landmarks found');
+              setTranslatedText("No hand detected");
+              setConfidence(0);
+            } else {
+              console.log('⚠️ Unknown response:', svmResult);
+              setTranslatedText("Can't Detect");
+              setConfidence(0);
+            }
+          } catch (error) {
+            console.error('❌ SVM prediction error:', error);
+            setTranslatedText("Error: " + error.message);
+            setConfidence(0);
+          }
+        }, 'image/jpeg', 0.95);
       } else {
-        console.error("Detection error:", result.error);
+        console.log('No hands detected');
+        setDetections([]);
+        setTranslatedText("No gesture detected");
+        setConfidence(0);
       }
       
     } catch (error) {
-      console.error("Local detection error:", error);
       setTranslatedText(`Error: ${error.message}`);
     } finally {
       isSending.current = false;
@@ -265,7 +328,6 @@ const LiveDetectionInterface = () => {
       setDetectionLog([]);
       speakButtonAction("Starting detection");
     } else {
-      // Update UI immediately (non-blocking)
       setTranslatedText("Detection Stopped");
       speakButtonAction("Detection stopped");
 
@@ -307,18 +369,12 @@ const LiveDetectionInterface = () => {
 
   // Draw bounding boxes on canvas overlay
   const drawDetections = useCallback(() => {
-    if (!canvasRef.current || !webcamRef.current || !isCameraOn) {
-      console.log('❌ Canvas drawing skipped - missing refs or camera off');
-      return;
-    }
+    if (!canvasRef.current || !webcamRef.current || !isCameraOn) {return;}
 
     const canvas = canvasRef.current;
     const video = webcamRef.current.video;
 
-    if (!video) {
-      console.log('❌ Video element not available');
-      return;
-    }
+    if (!video) {return;}
 
     const ctx = canvas.getContext("2d");
 
@@ -326,39 +382,35 @@ const LiveDetectionInterface = () => {
     canvas.width = video.videoWidth || video.clientWidth;
     canvas.height = video.videoHeight || video.clientHeight;
 
-    console.log('🎨 Canvas size:', canvas.width, 'x', canvas.height);
-    console.log('🎨 Drawing', detections.length, 'detections');
-
     // Clear previous drawings
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw bounding boxes
     detections.forEach((detection, index) => {
-      console.log(`Drawing detection ${index}:`, detection);
-      
       const [x1, y1, x2, y2] = detection.bbox;
-      const confidence = detection.confidence;
-      const className = detection.class_name || 'hand';
-
-      console.log(`  Bbox: [${x1}, ${y1}, ${x2}, ${y2}], conf: ${confidence}`);
-
-      // Draw bounding box
       ctx.strokeStyle = "#00ff00";
       ctx.lineWidth = 3;
       ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
 
-      // Draw confidence label background
-      ctx.fillStyle = "rgba(0, 255, 0, 0.8)";
-      const text = `${className}: ${(confidence * 100).toFixed(1)}%`;
-      ctx.font = "16px Arial";
-      const textMetrics = ctx.measureText(text);
-      ctx.fillRect(x1, y1 - 25, textMetrics.width + 10, 25);
+      // Draw predicted letter (use translatedText and confidence from state)
+      const displayText = translatedText !== "Ready" && 
+                         translatedText !== "Can't Detect" && 
+                         translatedText !== "Camera Off" &&
+                         translatedText !== "No gesture detected"
+        ? `${translatedText} (${(confidence * 100).toFixed(1)}%)`
+        : `Detecting...`;
 
-      // Draw confidence label text
+      // Draw label background
+      ctx.fillStyle = "rgba(0, 255, 0, 0.9)";
+      ctx.font = "bold 20px Arial";
+      const textMetrics = ctx.measureText(displayText);
+      ctx.fillRect(x1, y1 - 30, textMetrics.width + 16, 30);
+
+      // Draw label text
       ctx.fillStyle = "#000";
-      ctx.fillText(text, x1 + 5, y1 - 8);
+      ctx.fillText(displayText, x1 + 8, y1 - 8);
     });
-  }, [detections, isCameraOn]);
+  }, [detections, isCameraOn, translatedText, confidence]);
 
   // Draw detections when they update
   useEffect(() => {
@@ -370,10 +422,9 @@ const LiveDetectionInterface = () => {
     });
     
     if (isDetecting && isCameraOn && detections.length > 0) {
-      console.log('✅ Calling drawDetections()');
       drawDetections();
     } else {
-      console.log('⏭️ Skipping draw - conditions not met');
+      console.log('Skipping draw - conditions not met');
     }
   }, [detections, drawDetections, isDetecting, isCameraOn]);
 
