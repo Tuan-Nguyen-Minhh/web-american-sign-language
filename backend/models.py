@@ -30,6 +30,7 @@ class DetectionHistory(Base):
     session_name = Column(String, nullable=True)  # Optional name for the session
     total_detections = Column(Integer)  # Number of detections in this session
     detections_data = Column(Text)  # JSON string of all detections
+    detected_text = Column(Text, nullable=True)  # The final accumulated text
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="detection_histories")

@@ -582,12 +582,13 @@ const LiveDetectionInterface = () => {
         body: JSON.stringify({
           session_name: sessionName,
           detections: detectionLog,
+          detected_text: accumulatedText,
         }),
       });
 
-      speakButtonAction(`Saved ${detectionLog.length} detections to database`);
+      speakButtonAction(`Saved text to database`);
       showToast(
-        `Successfully saved ${detectionLog.length} detections to your profile!`,
+        `Successfully saved your detected text to your profile!`,
         "success"
       );
     } catch (error) {

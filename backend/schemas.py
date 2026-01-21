@@ -85,6 +85,7 @@ class DetectionItem(BaseModel):
 class SaveDetectionHistoryRequest(BaseModel):
     session_name: str | None = None
     detections: List[DetectionItem]
+    detected_text: str | None = None
 
 class DetectionHistoryResponse(BaseModel):
     id: int
@@ -92,6 +93,7 @@ class DetectionHistoryResponse(BaseModel):
     total_detections: int
     created_at: str
     detections: List[DetectionItem]
+    detected_text: str | None = None
 
     class Config:
         from_attributes = True

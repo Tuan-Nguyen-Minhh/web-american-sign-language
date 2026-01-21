@@ -54,7 +54,8 @@ async def save_detection_history(
             user_id=current_user.id,
             session_name=request.session_name,
             total_detections=len(request.detections),
-            detections_data=detections_json
+            detections_data=detections_json,
+            detected_text=request.detected_text
         )
         
         db.add(new_history)
@@ -67,7 +68,8 @@ async def save_detection_history(
             session_name=new_history.session_name,
             total_detections=new_history.total_detections,
             created_at=new_history.created_at.isoformat(),
-            detections=[schemas.DetectionItem(**det) for det in json.loads(new_history.detections_data)]
+            detections=[schemas.DetectionItem(**det) for det in json.loads(new_history.detections_data)],
+            detected_text=new_history.detected_text
         )
         
     except Exception as e:
@@ -97,7 +99,8 @@ async def get_detection_history(
                 session_name=history.session_name,
                 total_detections=history.total_detections,
                 created_at=history.created_at.isoformat(),
-                detections=[schemas.DetectionItem(**det) for det in json.loads(history.detections_data)]
+                detections=[schemas.DetectionItem(**det) for det in json.loads(history.detections_data)],
+                detected_text=history.detected_text
             ))
         
         return result
