@@ -3,11 +3,13 @@ import Webcam from "react-webcam";
 import apiService from "../services/apiService";
 import { authService } from "../services/authService";
 import { yoloModel } from "../utils/onnxModelLoader";
+import { useWebSocketDetection } from "../hooks/useWebSocketDetection";
 import API_BASE_URL from "../config/api";
 import GuestRestriction from "./guest/GuestRestriction";
 import "./LiveDetectionInterface.css";
 
 const CAPTURE_INTERVAL = 100; // Run inference every 100ms (10 FPS for local processing)
+const USE_WEBSOCKET = true; // Toggle between WebSocket and HTTP
 
 // Toast Notification Component
 const Toast = ({ message, type, onClose }) => {
@@ -71,6 +73,16 @@ const LiveDetectionInterface = () => {
   const [modelLoaded, setModelLoaded] = useState(false);
   const [modelLoading, setModelLoading] = useState(false);
   const isSending = useRef(false);
+
+  // WebSocket hook for real-time detection
+  const {
+    connect: connectWebSocket,
+    disconnect: disconnectWebSocket,
+    sendFrame,
+    setOnMessage,
+    isConnected: wsConnected,
+    error: wsError
+  } = useWebSocketDetection();
 
   // Toast notification helper
   const showToast = useCallback((message, type = "success") => {
@@ -144,6 +156,59 @@ const LiveDetectionInterface = () => {
     window.speechSynthesis.speak(utterance);
   }, []);
 
+  // WebSocket message handler
+  useEffect(() => {
+    if (USE_WEBSOCKET) {
+      setOnMessage((data) => {
+        if (data.status === 'success' && data.prediction) {
+          const letterPrediction = data.prediction;
+          const letterConfidence = data.confidence;
+          
+          console.log(`✅ WebSocket Predicted: ${letterPrediction} (${(letterConfidence * 100).toFixed(1)}%)`);
+          
+          // Update UI with letter prediction
+          setTranslatedText(letterPrediction);
+          setConfidence(letterConfidence);
+          
+          // Update detection log if confidence is high enough
+          if (letterConfidence > 0.7 && letterPrediction !== detectionLog[0]?.word) {
+            setDetectionLog((prevLog) => [
+              { word: letterPrediction, confidence: letterConfidence },
+              ...prevLog,
+            ]);
+          }
+          
+          // Store last valid detection
+          setLastDetectedText(letterPrediction);
+          setLastDetectedConfidence(letterConfidence);
+        } else if (data.status === 'no_hand_detected') {
+          // Don't update text, keep showing last detection
+          console.log('⚠️ WebSocket: No hand detected');
+        } else if (data.status === 'error') {
+          console.error('❌ WebSocket error:', data.error);
+        }
+      });
+    }
+  }, [setOnMessage, detectionLog]);
+
+  // WebSocket connection management
+  useEffect(() => {
+    if (USE_WEBSOCKET && isDetecting && !wsConnected) {
+      console.log('🔌 Connecting WebSocket...');
+      connectWebSocket();
+    } else if (!isDetecting && wsConnected) {
+      console.log('🔌 Disconnecting WebSocket...');
+      disconnectWebSocket();
+    }
+  }, [isDetecting, wsConnected, connectWebSocket, disconnectWebSocket]);
+
+  // WebSocket error handling
+  useEffect(() => {
+    if (wsError) {
+      showToast(`WebSocket error: ${wsError}`, 'error');
+    }
+  }, [wsError, showToast]);
+
   // Load ONNX model on component mount
   useEffect(() => {
     const initModel = async () => {
@@ -202,7 +267,7 @@ const LiveDetectionInterface = () => {
         // Update detections for bounding box drawing
         setDetections(apiDetections);
         
-        // Get the first detected hand and send to SVM for letter prediction
+        // Get the first detected hand
         const handDetection = apiDetections[0];
         let [x1, y1, x2, y2] = handDetection.bbox;
         
@@ -221,28 +286,33 @@ const LiveDetectionInterface = () => {
         apiDetections[0].bbox = [x1, y1, x2, y2];
         setDetections(apiDetections);
         
-        // TEST: Send FULL FRAME instead of crop to see if SVM works better
+        // Create canvas with full frame
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        
-        // Use full video frame dimensions
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        
-        // Draw the full frame
         ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
         
-        console.log(`📸 Sending full frame: ${canvas.width}x${canvas.height} (testing if crop is the issue)`);
-        
-        // Convert to blob and send to SVM API
-        canvas.toBlob(async (blob) => {
-          try {
-            const file = new File([blob], 'hand.jpg', { type: 'image/jpeg' });
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            // Call SVM prediction API
-            const token = localStorage.getItem('access_token');
+        // Send to backend via WebSocket or HTTP
+        if (USE_WEBSOCKET && wsConnected) {
+          // WebSocket mode - send base64 image
+          const base64Image = canvas.toDataURL('image/jpeg', 0.95);
+          const success = sendFrame(base64Image);
+          
+          if (!success) {
+            console.warn('⚠️ Failed to send frame via WebSocket');
+          }
+        } else {
+          // HTTP mode - existing implementation
+          console.log(`📸 Sending full frame via HTTP: ${canvas.width}x${canvas.height}`);
+          
+          canvas.toBlob(async (blob) => {
+            try {
+              const file = new File([blob], 'hand.jpg', { type: 'image/jpeg' });
+              const formData = new FormData();
+              formData.append('file', file);
+              
+              const token = localStorage.getItem('access_token');
             const response = await fetch(`${API_BASE_URL}/detection/predict-asl`, {
               method: 'POST',
               headers: token ? { 'Authorization': `Bearer ${token}` } : {},
@@ -292,6 +362,7 @@ const LiveDetectionInterface = () => {
             setConfidence(0);
           }
         }, 'image/jpeg', 0.95);
+        }
       } else {
         console.log('No hands detected');
         setDetections([]);
@@ -304,7 +375,7 @@ const LiveDetectionInterface = () => {
     } finally {
       isSending.current = false;
     }
-  }, [isDetecting, detectionLog, modelLoaded]);
+  }, [isDetecting, detectionLog, modelLoaded, wsConnected, sendFrame]);
 
   // Run detection at regular intervals
   useEffect(() => {
