@@ -56,12 +56,28 @@ def extract_features_from_landmarks(hand_landmarks) -> np.ndarray:
     """
     Extract features from MediaPipe hand landmarks for SVM model.
     The SVM model expects 42 features (21 landmarks * 2 coordinates: x, y)
+    Features are RELATIVE to the wrist (landmark 0) and NORMALIZED by max distance
+    to match training data preprocessing.
     """
-    features = []
-    for landmark in hand_landmarks.landmark:
-        features.append(landmark.x)
-        features.append(landmark.y)
-    return np.array(features).reshape(1, -1)
+    landmarks = hand_landmarks.landmark
+    
+    # Extract all keypoints as numpy array (21 landmarks, 2 coordinates)
+    keypoints = np.array([[lm.x, lm.y] for lm in landmarks], dtype=np.float32)
+    
+    # Normalize keypoints (same as training preprocessing)
+    # Step 1: Make relative to wrist (landmark 0)
+    wrist = keypoints[0].copy()
+    coords = keypoints - wrist
+    
+    # Step 2: Scale by maximum distance from wrist
+    dists = np.linalg.norm(coords, axis=1)
+    scale = dists.max()
+    if scale < 1e-6:
+        scale = 1.0
+    coords = coords / scale
+    
+    # Flatten to 1D array (42 features)
+    return coords.reshape(1, -1)
 
 @router.post("/predict-asl")
 async def predict_asl_letter(file: UploadFile = File(...)):
