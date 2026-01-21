@@ -8,15 +8,14 @@ import API_BASE_URL from "../config/api";
 import GuestRestriction from "./guest/GuestRestriction";
 import "./LiveDetectionInterface.css";
 
-const CAPTURE_INTERVAL = 100; // Run inference every 100ms (10 FPS for local processing)
+const CAPTURE_INTERVAL = 100; // 10 FPS
 const USE_WEBSOCKET = true; // Toggle between WebSocket and HTTP
 
-// Toast Notification Component
 const Toast = ({ message, type, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
-    }, 4000); // Auto close after 4 seconds
+    }, 3000); 
 
     return () => clearTimeout(timer);
   }, [onClose]);
@@ -80,9 +79,7 @@ const LiveDetectionInterface = () => {
     } else if (lowerPred === 'del') {
       setAccumulatedText(prev => prev.slice(0, -1));
     } else if (lowerPred === 'nothing') {
-      // Do nothing - don't add to accumulated text
     } else {
-      // Regular letter - add it
       setAccumulatedText(prev => prev + prediction);
     }
   }, []);
@@ -179,8 +176,6 @@ const LiveDetectionInterface = () => {
           const letterPrediction = data.prediction;
           const letterConfidence = data.confidence;
           
-          console.log(`✅ WebSocket Predicted: ${letterPrediction} (${(letterConfidence * 100).toFixed(1)}%)`);
-          
           // Update current detection display
           setTranslatedText(letterPrediction);
           setConfidence(letterConfidence);
@@ -202,7 +197,6 @@ const LiveDetectionInterface = () => {
                 // Check if this letter was already added
                 if (letterPrediction !== lastPredictionRef.current) {
                   // Held for 2 seconds and not already added - confirm it!
-                  console.log(`🎯 Confirmed letter: ${letterPrediction} (held for ${(holdTime/1000).toFixed(1)}s)`);
                   processDetection(letterPrediction);
                   lastPredictionRef.current = letterPrediction;
                   
@@ -215,7 +209,6 @@ const LiveDetectionInterface = () => {
               }
             } else {
               // Different prediction - reset timer and allow same letter again
-              console.log(`⏱️ New prediction: ${letterPrediction}, starting timer...`);
               currentPredictionRef.current = letterPrediction;
               predictionStartTimeRef.current = now;
               // Reset last prediction to allow duplicates
@@ -224,16 +217,15 @@ const LiveDetectionInterface = () => {
               }
             }
           } else {
-            // Low confidence - reset tracking to allow duplicates
+            // reset tracking to allow duplicates
             currentPredictionRef.current = "";
             predictionStartTimeRef.current = null;
             lastPredictionRef.current = ""; // Allow same letter after break
           }
         } else if (data.status === 'no_hand_detected') {
-          // Don't update text, keep showing last detection
-          console.log('⚠️ WebSocket: No hand detected');
+          console.log('WebSocket: No hand detected');
         } else if (data.status === 'error') {
-          console.error('❌ WebSocket error:', data.error);
+          console.error('WebSocket error:', data.error);
         }
       });
     }
@@ -242,10 +234,8 @@ const LiveDetectionInterface = () => {
   // WebSocket connection management
   useEffect(() => {
     if (USE_WEBSOCKET && isDetecting && !wsConnected) {
-      console.log('🔌 Connecting WebSocket...');
       connectWebSocket();
     } else if (!isDetecting && wsConnected) {
-      console.log('🔌 Disconnecting WebSocket...');
       disconnectWebSocket();
     }
   }, [isDetecting, wsConnected, connectWebSocket, disconnectWebSocket]);
@@ -348,12 +338,10 @@ const LiveDetectionInterface = () => {
           const success = sendFrame(base64Image);
           
           if (!success) {
-            console.warn('⚠️ Failed to send frame via WebSocket');
+            console.warn('Failed to send frame via WebSocket');
           }
         } else {
           // HTTP mode - existing implementation
-          console.log(`📸 Sending full frame via HTTP: ${canvas.width}x${canvas.height}`);
-          
           canvas.toBlob(async (blob) => {
             try {
               const file = new File([blob], 'hand.jpg', { type: 'image/jpeg' });
@@ -372,13 +360,10 @@ const LiveDetectionInterface = () => {
             }
             
             const svmResult = await response.json();
-            console.log('🔤 SVM prediction result:', svmResult);
             
             if (svmResult.status === 'success' && svmResult.prediction) {
               const letterPrediction = svmResult.prediction;
               const letterConfidence = svmResult.confidence;
-              
-              console.log(`✅ Predicted: ${letterPrediction} (${(letterConfidence * 100).toFixed(1)}%)`);
               
               // Update current detection display
               setTranslatedText(letterPrediction);
@@ -401,7 +386,6 @@ const LiveDetectionInterface = () => {
                     // Check if this letter was already added
                     if (letterPrediction !== lastPredictionRef.current) {
                       // Held for 2 seconds and not already added - confirm it!
-                      console.log(`🎯 Confirmed letter: ${letterPrediction} (held for ${(holdTime/1000).toFixed(1)}s)`);
                       processDetection(letterPrediction);
                       lastPredictionRef.current = letterPrediction;
                       
@@ -414,7 +398,6 @@ const LiveDetectionInterface = () => {
                   }
                 } else {
                   // Different prediction - reset timer and allow same letter again
-                  console.log(`⏱️ New prediction: ${letterPrediction}, starting timer...`);
                   currentPredictionRef.current = letterPrediction;
                   predictionStartTimeRef.current = now;
                   // Reset last prediction to allow duplicates
@@ -429,16 +412,13 @@ const LiveDetectionInterface = () => {
                 lastPredictionRef.current = ""; // Allow same letter after break
               }
             } else if (svmResult.status === 'no_hand_detected') {
-              console.log('⚠️ Backend: No hand landmarks found');
               setTranslatedText("No hand detected");
               setConfidence(0);
             } else {
-              console.log('⚠️ Unknown response:', svmResult);
               setTranslatedText("Can't Detect");
               setConfidence(0);
             }
           } catch (error) {
-            console.error('❌ SVM prediction error:', error);
             setTranslatedText("Error: " + error.message);
             setConfidence(0);
           }
@@ -510,7 +490,7 @@ const LiveDetectionInterface = () => {
       setDetections([]);
       setDetectionLog([]); // Clear history when turning off camera
       setTranslatedText("Camera Off");
-      setConfidence(0); // Reset confidence
+      setConfidence(0); 
       speakButtonAction("Camera turned off");
     } else {
       if (!modelLoaded && !modelLoading) {
@@ -570,7 +550,7 @@ const LiveDetectionInterface = () => {
 
   // Draw detections when they update
   useEffect(() => {
-    console.log('🎨 Draw effect triggered:', {
+    console.log('Draw effect triggered:', {
       isDetecting,
       isCameraOn,
       detectionsCount: detections.length,
