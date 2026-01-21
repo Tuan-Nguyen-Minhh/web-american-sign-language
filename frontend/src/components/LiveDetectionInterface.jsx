@@ -63,6 +63,8 @@ const LiveDetectionInterface = () => {
   const [confidence, setConfidence] = useState(0);
   const [lastDetectedText, setLastDetectedText] = useState(""); // Store last valid detection
   const [lastDetectedConfidence, setLastDetectedConfidence] = useState(0);
+  const [accumulatedText, setAccumulatedText] = useState(""); // Accumulated letters
+  const lastPredictionRef = useRef(""); // Track last prediction to avoid duplicates
   const [detectionLog, setDetectionLog] = useState([]);
   const [isDetecting, setIsDetecting] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(false);
@@ -117,14 +119,8 @@ const LiveDetectionInterface = () => {
         return;
       }
 
-      // Build comprehensive speech text with all information
+      // Use text directly without confidence information
       let speechText = text;
-
-      // Add confidence information if available
-      if (confidenceValue && confidenceValue > 0) {
-        const confidencePercent = Math.round(confidenceValue * 100);
-        speechText += ` with ${confidencePercent} percent confidence`;
-      }
 
       // Create speech utterance
       const utterance = new SpeechSynthesisUtterance(speechText);
@@ -166,17 +162,23 @@ const LiveDetectionInterface = () => {
           
           console.log(`✅ WebSocket Predicted: ${letterPrediction} (${(letterConfidence * 100).toFixed(1)}%)`);
           
-          // Update UI with letter prediction
+          // Accumulate letters if confidence is high enough and not duplicate
+          if (letterConfidence > 0.7) {
+            if (letterPrediction !== lastPredictionRef.current) {
+              setAccumulatedText(prev => prev + letterPrediction);
+              lastPredictionRef.current = letterPrediction;
+              
+              // Update detection log
+              setDetectionLog((prevLog) => [
+                { word: letterPrediction, confidence: letterConfidence },
+                ...prevLog,
+              ]);
+            }
+          }
+          
+          // Update current detection
           setTranslatedText(letterPrediction);
           setConfidence(letterConfidence);
-          
-          // Update detection log if confidence is high enough
-          if (letterConfidence > 0.7 && letterPrediction !== detectionLog[0]?.word) {
-            setDetectionLog((prevLog) => [
-              { word: letterPrediction, confidence: letterConfidence },
-              ...prevLog,
-            ]);
-          }
           
           // Store last valid detection
           setLastDetectedText(letterPrediction);
@@ -332,17 +334,23 @@ const LiveDetectionInterface = () => {
               
               console.log(`✅ Predicted: ${letterPrediction} (${(letterConfidence * 100).toFixed(1)}%)`);
               
-              // Update UI with letter prediction
+              // Accumulate letters if confidence is high enough and not duplicate
+              if (letterConfidence > 0.7) {
+                if (letterPrediction !== lastPredictionRef.current) {
+                  setAccumulatedText(prev => prev + letterPrediction);
+                  lastPredictionRef.current = letterPrediction;
+                  
+                  // Update detection log
+                  setDetectionLog((prevLog) => [
+                    { word: letterPrediction, confidence: letterConfidence },
+                    ...prevLog,
+                  ]);
+                }
+              }
+              
+              // Update current detection
               setTranslatedText(letterPrediction);
               setConfidence(letterConfidence);
-              
-              // Update detection log if confidence is high enough
-              if (letterConfidence > 0.7 && letterPrediction !== detectionLog[0]?.word) {
-                setDetectionLog((prevLog) => [
-                  { word: letterPrediction, confidence: letterConfidence },
-                  ...prevLog,
-                ]);
-              }
               
               // Store last valid detection
               setLastDetectedText(letterPrediction);
@@ -397,6 +405,8 @@ const LiveDetectionInterface = () => {
     if (!isDetecting) {
       setTranslatedText("Start Detecting");
       setDetectionLog([]);
+      setAccumulatedText(""); // Reset accumulated text
+      lastPredictionRef.current = ""; // Reset last prediction
       speakButtonAction("Starting detection");
     } else {
       setTranslatedText("Detection Stopped");
@@ -573,13 +583,9 @@ const LiveDetectionInterface = () => {
           />
 
           <div className="current-result">
-            <h3>Detecting:</h3>
-            <p className="detected-text">{translatedText}</p>
-            <p
-              className="confidence-text"
-              style={{ color: confidence > 0.7 ? "green" : "red" }}
-            >
-              Confidence: {Math.round(confidence * 100)}%
+            <h3>Text:</h3>
+            <p className="detected-text" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+              {accumulatedText || "Ready to detect..."}
             </p>
           </div>
 
@@ -625,19 +631,36 @@ const LiveDetectionInterface = () => {
                 className="btn-control speak"
                 onClick={() =>
                   speakText(
-                    lastDetectedText || translatedText,
+                    accumulatedText || lastDetectedText || translatedText,
                     lastDetectedConfidence || confidence
                   )
                 }
-                disabled={isDetecting || isSpeaking || !lastDetectedText}
+                disabled={isDetecting || isSpeaking || !accumulatedText}
                 style={{
                   backgroundColor: isSpeaking ? "#17a2b8" : "#7d53cbff",
                   color: "white",
                   opacity:
-                    isDetecting || isSpeaking || !lastDetectedText ? 0.5 : 1,
+                    isDetecting || isSpeaking || !accumulatedText ? 0.5 : 1,
                 }}
               >
                 {isSpeaking ? "🔊 Speaking..." : "🔊 Speak"}
+              </button>
+
+              <button
+                className="btn-control clear"
+                onClick={() => {
+                  setAccumulatedText("");
+                  lastPredictionRef.current = "";
+                  speakButtonAction("Text cleared");
+                }}
+                disabled={!accumulatedText || isDetecting}
+                style={{
+                  backgroundColor: "#ff6b6b",
+                  color: "white",
+                  opacity: !accumulatedText || isDetecting ? 0.5 : 1,
+                }}
+              >
+                Clear
               </button>
 
               <button
