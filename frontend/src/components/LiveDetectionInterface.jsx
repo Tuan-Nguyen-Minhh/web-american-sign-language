@@ -65,6 +65,9 @@ const LiveDetectionInterface = () => {
   const [lastDetectedConfidence, setLastDetectedConfidence] = useState(0);
   const [accumulatedText, setAccumulatedText] = useState(""); // Accumulated letters
   const lastPredictionRef = useRef(""); // Track last prediction to avoid duplicates
+  const currentPredictionRef = useRef(""); // Track current stable prediction
+  const predictionStartTimeRef = useRef(null); // Track when current prediction started
+  const holdDuration = 1500; // seconds hold time in milliseconds
   const [detectionLog, setDetectionLog] = useState([]);
   const [isDetecting, setIsDetecting] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(false);
@@ -162,27 +165,54 @@ const LiveDetectionInterface = () => {
           
           console.log(`✅ WebSocket Predicted: ${letterPrediction} (${(letterConfidence * 100).toFixed(1)}%)`);
           
-          // Accumulate letters if confidence is high enough and not duplicate
-          if (letterConfidence > 0.7) {
-            if (letterPrediction !== lastPredictionRef.current) {
-              setAccumulatedText(prev => prev + letterPrediction);
-              lastPredictionRef.current = letterPrediction;
-              
-              // Update detection log
-              setDetectionLog((prevLog) => [
-                { word: letterPrediction, confidence: letterConfidence },
-                ...prevLog,
-              ]);
-            }
-          }
-          
-          // Update current detection
+          // Update current detection display
           setTranslatedText(letterPrediction);
           setConfidence(letterConfidence);
           
           // Store last valid detection
           setLastDetectedText(letterPrediction);
           setLastDetectedConfidence(letterConfidence);
+          
+          // Handle letter confirmation with 2-second hold time
+          if (letterConfidence > 0.7) {
+            const now = Date.now();
+            
+            // Check if this is the same prediction as before
+            if (letterPrediction === currentPredictionRef.current) {
+              // Same prediction - check if held long enough
+              const holdTime = now - predictionStartTimeRef.current;
+              
+              if (holdTime >= holdDuration) {
+                // Check if this letter was already added
+                if (letterPrediction !== lastPredictionRef.current) {
+                  // Held for 2 seconds and not already added - confirm it!
+                  console.log(`🎯 Confirmed letter: ${letterPrediction} (held for ${(holdTime/1000).toFixed(1)}s)`);
+                  setAccumulatedText(prev => prev + letterPrediction);
+                  lastPredictionRef.current = letterPrediction;
+                  
+                  // Update detection log
+                  setDetectionLog((prevLog) => [
+                    { word: letterPrediction, confidence: letterConfidence },
+                    ...prevLog,
+                  ]);
+                }
+              }
+            } else {
+              // Different prediction - reset timer and allow same letter again
+              console.log(`⏱️ New prediction: ${letterPrediction}, starting timer...`);
+              currentPredictionRef.current = letterPrediction;
+              predictionStartTimeRef.current = now;
+              // Reset last prediction to allow duplicates
+              if (letterPrediction !== lastPredictionRef.current) {
+                lastPredictionRef.current = "";
+              }
+            }
+          } else {
+            // Low confidence - reset tracking to allow duplicates
+            currentPredictionRef.current = "";
+            predictionStartTimeRef.current = null;
+            lastPredictionRef.current = ""; // Allow same letter after break
+          }
         } else if (data.status === 'no_hand_detected') {
           // Don't update text, keep showing last detection
           console.log('⚠️ WebSocket: No hand detected');
@@ -334,27 +364,54 @@ const LiveDetectionInterface = () => {
               
               console.log(`✅ Predicted: ${letterPrediction} (${(letterConfidence * 100).toFixed(1)}%)`);
               
-              // Accumulate letters if confidence is high enough and not duplicate
-              if (letterConfidence > 0.7) {
-                if (letterPrediction !== lastPredictionRef.current) {
-                  setAccumulatedText(prev => prev + letterPrediction);
-                  lastPredictionRef.current = letterPrediction;
-                  
-                  // Update detection log
-                  setDetectionLog((prevLog) => [
-                    { word: letterPrediction, confidence: letterConfidence },
-                    ...prevLog,
-                  ]);
-                }
-              }
-              
-              // Update current detection
+              // Update current detection display
               setTranslatedText(letterPrediction);
               setConfidence(letterConfidence);
               
               // Store last valid detection
               setLastDetectedText(letterPrediction);
               setLastDetectedConfidence(letterConfidence);
+              
+              // Handle letter confirmation with 2-second hold time
+              if (letterConfidence > 0.7) {
+                const now = Date.now();
+                
+                // Check if this is the same prediction as before
+                if (letterPrediction === currentPredictionRef.current) {
+                  // Same prediction - check if held long enough
+                  const holdTime = now - predictionStartTimeRef.current;
+                  
+                  if (holdTime >= holdDuration) {
+                    // Check if this letter was already added
+                    if (letterPrediction !== lastPredictionRef.current) {
+                      // Held for 2 seconds and not already added - confirm it!
+                      console.log(`🎯 Confirmed letter: ${letterPrediction} (held for ${(holdTime/1000).toFixed(1)}s)`);
+                      setAccumulatedText(prev => prev + letterPrediction);
+                      lastPredictionRef.current = letterPrediction;
+                      
+                      // Update detection log
+                      setDetectionLog((prevLog) => [
+                        { word: letterPrediction, confidence: letterConfidence },
+                        ...prevLog,
+                      ]);
+                    }
+                  }
+                } else {
+                  // Different prediction - reset timer and allow same letter again
+                  console.log(`⏱️ New prediction: ${letterPrediction}, starting timer...`);
+                  currentPredictionRef.current = letterPrediction;
+                  predictionStartTimeRef.current = now;
+                  // Reset last prediction to allow duplicates
+                  if (letterPrediction !== lastPredictionRef.current) {
+                    lastPredictionRef.current = "";
+                  }
+                }
+              } else {
+                // Low confidence - reset tracking to allow duplicates
+                currentPredictionRef.current = "";
+                predictionStartTimeRef.current = null;
+                lastPredictionRef.current = ""; // Allow same letter after break
+              }
             } else if (svmResult.status === 'no_hand_detected') {
               console.log('⚠️ Backend: No hand landmarks found');
               setTranslatedText("No hand detected");
@@ -407,6 +464,8 @@ const LiveDetectionInterface = () => {
       setDetectionLog([]);
       setAccumulatedText(""); // Reset accumulated text
       lastPredictionRef.current = ""; // Reset last prediction
+      currentPredictionRef.current = ""; // Reset current prediction
+      predictionStartTimeRef.current = null; // Reset timer
       speakButtonAction("Starting detection");
     } else {
       setTranslatedText("Detection Stopped");
