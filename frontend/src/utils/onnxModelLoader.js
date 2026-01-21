@@ -13,9 +13,6 @@ class YOLOModelLoader {
     this.isLoaded = false;
   }
 
-  /**
-   * Load the ONNX model
-   */
   async loadModel(modelPath = null) {
     try {
       const path = modelPath || this.modelPath;
@@ -26,7 +23,7 @@ class YOLOModelLoader {
       
       // Additional ONNX Runtime configuration
       ort.env.wasm.numThreads = 1; // Single thread for better compatibility
-      
+
       // Create inference session with better error handling
       this.session = await ort.InferenceSession.create(path, {
         executionProviders: ['wasm'],
@@ -34,25 +31,21 @@ class YOLOModelLoader {
       });
       
       this.isLoaded = true;
-      console.log('✅ ONNX model loaded successfully');
+      console.log('ONNX model loaded successfully');
       console.log('Model inputs:', this.session.inputNames);
       console.log('Model outputs:', this.session.outputNames);
       
       return true;
     } catch (error) {
-      console.error('❌ Error loading ONNX model:', error);
-      console.error('Error details:', error.message);
+      console.error('Error loading ONNX model:', error.message);
       console.error('Make sure the model file exists at:', this.modelPath);
-      console.error('Try running: python convert_model_to_onnx.py');
       this.isLoaded = false;
       return false;
     }
   }
 
-  /**
-   * Letterbox preprocessing - maintains aspect ratio with padding
-   * Same logic as Python OpenCV version
-   */
+  // Letterbox preprocessing - maintains aspect ratio with padding
+
   letterbox(image, newShape = 320) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
