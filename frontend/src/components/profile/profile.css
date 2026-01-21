@@ -576,8 +576,8 @@
 
 .info-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .label {
@@ -589,6 +589,20 @@
 .value {
   font-size: 14px;
   color: var(--text-primary);
+}
+
+.detected-text-preview {
+  background-color: var(--bg-light);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 15px;
+  color: var(--text-primary);
+  font-family: monospace;
+  line-height: 1.6;
+  word-wrap: break-word;
+  max-height: 100px;
+  overflow-y: auto;
 }
 
 .card-footer {
@@ -738,36 +752,20 @@
   font-size: 1.1rem;
 }
 
-.detection-items {
-  max-height: 300px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.detection-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
+.detected-text-display {
   background-color: var(--bg-light);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  border-left: 3px solid var(--primary-color);
-}
-
-.detection-word {
-  font-weight: 600;
+  padding: 20px;
+  font-size: 16px;
   color: var(--text-primary);
-}
-
-.detection-confidence {
-  font-weight: 600;
-  color: var(--primary-color);
-  background-color: var(--bg-medium);
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.9rem;
+  font-family: monospace;
+  line-height: 1.8;
+  word-wrap: break-word;
+  min-height: 100px;
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
 }
 
 /* Icon Sizes */

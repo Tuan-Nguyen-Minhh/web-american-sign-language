@@ -104,24 +104,20 @@ export default function Profile() {
   };
 
   // Text-to-Speech function
-  const speakDetections = (detections, sessionId) => {
+  const speakDetectedText = (detectedText, sessionId) => {
     if (!("speechSynthesis" in window)) {
       showToast("Your browser does not support text-to-speech", "error");
       return;
     }
 
+    if (!detectedText || detectedText.trim() === "") {
+      showToast("No text to speak", "error");
+      return;
+    }
+
     window.speechSynthesis.cancel();
 
-    const speechText = detections
-      .map(
-        (det) =>
-          `${det.word} with ${Math.round(
-            det.confidence * 100
-          )} percent confidence`
-      )
-      .join(", ");
-
-    const utterance = new SpeechSynthesisUtterance(speechText);
+    const utterance = new SpeechSynthesisUtterance(detectedText);
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
@@ -420,22 +416,9 @@ export default function Profile() {
 
                   <div className="card-body">
                     <div className="info-row">
-                      <span className="label">Total Detections:</span>
-                      <span className="value">{item.total_detections}</span>
-                    </div>
-                    <div className="detections-preview">
-                      <span className="label">Detected Gestures:</span>
-                      <div className="gesture-list">
-                        {item.detections.slice(0, 3).map((det, idx) => (
-                          <span key={idx} className="gesture-badge">
-                            {det.word} ({Math.round(det.confidence * 100)}%)
-                          </span>
-                        ))}
-                        {item.detections.length > 3 && (
-                          <span className="more-badge">
-                            +{item.detections.length - 3} more
-                          </span>
-                        )}
+                      <span className="label">Detected Text:</span>
+                      <div className="detected-text-preview">
+                        {item.detected_text || "No text available"}
                       </div>
                     </div>
                   </div>
@@ -443,7 +426,7 @@ export default function Profile() {
                   <div className="card-footer">
                     <button
                       className="action-btn play-btn"
-                      onClick={() => speakDetections(item.detections, item.id)}
+                      onClick={() => speakDetectedText(item.detected_text, item.id)}
                       disabled={speakingSessionId === item.id}
                     >
                       <FaVolumeUp className="btn-icon" />
@@ -461,18 +444,13 @@ export default function Profile() {
                     <button
                       className="action-btn"
                       onClick={() => {
-                        const logText = item.detections
-                          .map(
-                            (d) =>
-                              `${d.word} (${Math.round(d.confidence * 100)}%)`
-                          )
-                          .join("\n");
+                        const logText = item.detected_text || "No text available";
                         const element = document.createElement("a");
                         const file = new Blob([logText], {
                           type: "text/plain",
                         });
                         element.href = URL.createObjectURL(file);
-                        element.download = `detection_${item.id}_${new Date(
+                        element.download = `detected_text_${item.id}_${new Date(
                           item.created_at
                         ).toLocaleDateString()}.txt`;
                         document.body.appendChild(element);
@@ -510,21 +488,10 @@ export default function Profile() {
               <div className="modal-info-row">
                 <strong>Date:</strong> {formatDate(selectedVideo.created_at)}
               </div>
-              <div className="modal-info-row">
-                <strong>Total Detections:</strong>{" "}
-                {selectedVideo.total_detections}
-              </div>
               <div className="modal-detections">
-                <h4>All Detected Gestures:</h4>
-                <div className="detection-items">
-                  {selectedVideo.detections.map((det, idx) => (
-                    <div key={idx} className="detection-row">
-                      <span className="detection-word">{det.word}</span>
-                      <span className="detection-confidence">
-                        {Math.round(det.confidence * 100)}%
-                      </span>
-                    </div>
-                  ))}
+                <h4>Detected Text:</h4>
+                <div className="detected-text-display">
+                  {selectedVideo.detected_text || "No text available"}
                 </div>
               </div>
             </div>

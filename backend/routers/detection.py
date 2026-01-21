@@ -1,274 +1,241 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException, status, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from .. import jwt_token, models, schemas
 import cv2
 import numpy as np
-from ultralytics import YOLO
 import base64
+import joblib
 import json
 from pathlib import Path
+
+# import mediapipe
+try:
+    import mediapipe as mp
+    mp_hands = mp.solutions.hands
+    mp_drawing = mp.solutions.drawing_utils
+    mp_drawing_styles = mp.solutions.drawing_styles
+    MEDIAPIPE_AVAILABLE = True
+except (AttributeError, ImportError):
+    # Fallback for newer mediapipe versions
+    MEDIAPIPE_AVAILABLE = False
 
 router = APIRouter(
     prefix="/api/detection",
     tags=['Hand Detection']
 )
 
-# Initialize YOLO model (load once when module is imported)
-model_path = Path(__file__).parent.parent / "detection" / "yolov8.pt"
-model = None
+# Load SVM model
+model_path = Path(__file__).parent.parent / "detection" / "svm_asl_model.joblib"
+svm_model = joblib.load(model_path)
 
-def load_model():
-    global model
-    try:
-        if model_path.exists():
-            model = YOLO(str(model_path))
-            print(f"YOLO model loaded successfully from {model_path}")
-        else:
-            print(f"Warning: YOLO model not found at {model_path}")
-            model = None
-    except Exception as e:
-        print(f"Error loading YOLO model: {e}")
-        model = None
+# Initialize MediaPipe Hands if available
+hands_detector = None
+if MEDIAPIPE_AVAILABLE:
+    hands_detector = mp_hands.Hands(
+        static_image_mode=True,
+        max_num_hands=1,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5
+    )
 
-# Load model on import
-load_model()
+# Health check endpoint
+@router.get("/health")
+async def detection_health_check():
+    return JSONResponse(content={
+        "status": "ok",
+        "message": "Detection service running with SVM model",
+        "mode": "backend",
+        "mediapipe": "enabled" if MEDIAPIPE_AVAILABLE else "unavailable",
+        "model_classes": svm_model.classes_.tolist()
+    })
 
-class HandDetectionService:
-    @staticmethod
-    # Process a single frame and detect hands (bounding boxes and confidence scores)
-    def process_frame(image_data: bytes) -> dict:
-        """
-        Process a single frame and detect hands
-        
-        Args:
-            image_data: Raw image bytes
-            
-        Returns:
-            dict: Detection results with bounding boxes and confidence scores
-        """
-        try:
-            # Convert bytes to numpy array
-            nparr = np.frombuffer(image_data, np.uint8)
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            
-            if img is None:
-                raise ValueError("Could not decode image")
-            
-            # Check if model is loaded
-            if model is None:
-                raise ValueError("YOLO model is not loaded")
-            
-            # Run YOLO detection
-            results = model(img)[0]
-            
-            # Extract hand bounding boxes
-            detections = []
-            
-            for box in results.boxes:
-                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().tolist()
-                conf = float(box.conf[0])
-                
-                # Filter by confidence threshold
-                if conf >= 0.3:
-                    detections.append({
-                        "bbox": [int(x1), int(y1), int(x2), int(y2)],
-                        "confidence": round(conf, 3),
-                        "class_name": "hand"
-                    })
-            
-            return {
-                "success": True,
-                "detections": detections,
-                "total_hands": len(detections)
-            }
-            
-        except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "detections": [],
-                "total_hands": 0
-            }
+def extract_features_from_landmarks(hand_landmarks) -> np.ndarray:
+    landmarks = hand_landmarks.landmark
     
-    # Process a base64 encoded frame
-    @staticmethod
-    def process_base64_frame(base64_data: str) -> dict:
-        """
-        Process a base64 encoded frame
-        
-        Args:
-            base64_data: Base64 encoded image string
-            
-        Returns:
-            dict: Detection results
-        """
-        try:
-            # Remove data URL prefix if present
-            if ',' in base64_data:
-                base64_data = base64_data.split(',')[1]
-            
-            # Decode base64 to bytes
-            image_data = base64.b64decode(base64_data)
-            
-            return HandDetectionService.process_frame(image_data)
-            
-        except Exception as e:
-            return {
-                "success": False,
-                "error": f"Base64 processing error: {str(e)}",
-                "detections": [],
-                "total_hands": 0
-            }
+    # Extract all keypoints as numpy array (21 landmarks, 2 coordinates)
+    keypoints = np.array([[lm.x, lm.y] for lm in landmarks], dtype=np.float32)
+    
+    # Step 1: Make relative to wrist (landmark 0)
+    wrist = keypoints[0].copy()
+    coords = keypoints - wrist
+    
+    # Step 2: Scale by maximum distance from wrist
+    dists = np.linalg.norm(coords, axis=1)
+    scale = dists.max()
+    if scale < 1e-6:
+        scale = 1.0
+    coords = coords / scale
+    
+    # Flatten to 1D array (42 features)
+    return coords.reshape(1, -1)
 
-# Detect hands in uploaded image file
-@router.post("/detect-frame", response_model=schemas.DetectionResponse)
-async def detect_hands_from_upload(
-    file: UploadFile = File(...),
-    current_user: models.User = Depends(jwt_token.get_authenticated_user)
-):
-    # Validate file type
-    if not file.content_type.startswith('image/'):
+# Process frame with MediaPipe, extract landmarks, and predict ASL letter using SVM model
+@router.post("/predict-asl")
+async def predict_asl_letter(file: UploadFile = File(...)):
+    if not MEDIAPIPE_AVAILABLE or hands_detector is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File must be an image"
+            status_code=503,
+            detail="MediaPipe is not available. Please install: pip install mediapipe==0.9.0"
         )
     
     try:
-        # Read file contents
+        # Read image file
         contents = await file.read()
+        nparr = np.frombuffer(contents, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
-        # Process the frame
-        result = HandDetectionService.process_frame(contents)
+        if image is None:
+            raise HTTPException(status_code=400, detail="Invalid image file")
         
-        return JSONResponse(content=result)
+        # Convert BGR to RGB for MediaPipe
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Detection failed: {str(e)}"
-        )
-
-# ASL Prediction endpoint (compatible with LiveDetectionInterface)
-@router.post("/predict", response_model=schemas.ASLPredictionResponse)
-async def predict_asl_sign(request: schemas.DetectionRequest, current_user: models.User = Depends(jwt_token.get_authenticated_user)):
-    try:
-        base64_data = request.image
+        # Process with MediaPipe
+        results = hands_detector.process(image_rgb)
         
-        # Process the frame
-        result = HandDetectionService.process_base64_frame(base64_data)
-        
-        if result["success"] and result["detections"]:
-            # Get the highest confidence detection
-            best_detection = max(result["detections"], key=lambda x: x["confidence"])
-            
-            # For now, return generic hand detection result
-            prediction = f"Hand Gesture ({result['total_hands']} hands)"
-            confidence = best_detection["confidence"]
-            
+        if not results.multi_hand_landmarks:
             return JSONResponse(content={
-                "prediction": prediction,
-                "confidence": confidence,
-                "total_hands": result["total_hands"],
-                "detections": result["detections"]
-            })
-        else:
-            return JSONResponse(content={
-                "prediction": "No gesture detected",
+                "status": "no_hand_detected",
+                "prediction": None,
                 "confidence": 0.0,
-                "total_hands": 0,
-                "detections": []
+                "message": "No hand detected in the frame",
+                "processed_image": None
             })
-            
+        
+        # Extract features from first detected hand
+        hand_landmarks = results.multi_hand_landmarks[0]
+        features = extract_features_from_landmarks(hand_landmarks)
+        
+        # Make prediction with SVM model
+        prediction = svm_model.predict(features)[0]
+        
+        # Get prediction probabilities (confidence scores)
+        try:
+            if hasattr(svm_model.named_steps['svc'], 'predict_proba'):
+                probabilities = svm_model.predict_proba(features)[0]
+                confidence = float(np.max(probabilities))
+            else:
+                # If probability not available, use decision function
+                decision_values = svm_model.decision_function(features)
+                if decision_values.ndim > 1:
+                    confidence = float(np.max(np.abs(decision_values)))
+                else:
+                    confidence = float(np.abs(decision_values[0]))
+                # Normalize to 0-1 range (approximation)
+                confidence = min(1.0, confidence / 5.0)
+        except Exception as e:
+            confidence = 0.8  # Default confidence
+        
+        # Return prediction result (no image processing needed)
+        return JSONResponse(content={
+            "status": "success",
+            "prediction": prediction,
+            "confidence": confidence,
+            "message": f"Detected ASL letter: {prediction}"
+        })
+    
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"ASL prediction failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error predicting ASL letter: {str(e)}")
 
-# WebSocket endpoint for real-time detection with lower latency. Maintains persistent connection for continuous frame processing.
+# WebSocket endpoint: Receives base64-encoded frames and returns predictions.
 @router.websocket("/ws")
 async def websocket_detection_endpoint(websocket: WebSocket):
+    if not MEDIAPIPE_AVAILABLE or hands_detector is None:
+        await websocket.close(code=1011, reason="MediaPipe not available")
+        return
+    
     await websocket.accept()
-    print("WebSocket client connected")
     
     try:
-        # Keep connection alive and process frames continuously
         while True:
+            # Receive message from client
+            data = await websocket.receive_text()
+            
             try:
-                # Receive base64 image data from client
-                data = await websocket.receive_text()
-                
-                # Parse JSON data
+                # Parse incoming message
                 message = json.loads(data)
+                base64_image = message.get('image', '')
                 
-                # Check for authentication token
-                token = message.get("token")
-                if not token:
-                    await websocket.send_json({
-                        "error": "Authentication required",
-                        "success": False
-                    })
-                    continue
-                
-                # Get image data
-                base64_image = message.get("image")
                 if not base64_image:
                     await websocket.send_json({
-                        "error": "No image data provided",
-                        "success": False
+                        "status": "error",
+                        "error": "No image data provided"
                     })
                     continue
                 
-                # Process the frame (non-blocking)
-                result = HandDetectionService.process_base64_frame(base64_image)
+                # Decode base64 image
+                if ',' in base64_image:
+                    base64_image = base64_image.split(',')[1]
                 
-                if result["success"] and result["detections"]:
-                    # Get the highest confidence detection
-                    best_detection = max(result["detections"], key=lambda x: x["confidence"])
-                    
-                    prediction = f"Hand Gesture ({result['total_hands']} hands)"
-                    confidence = best_detection["confidence"]
-                    
-                    # Send detection results back to client
+                image_bytes = base64.b64decode(base64_image)
+                nparr = np.frombuffer(image_bytes, np.uint8)
+                image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                
+                if image is None:
                     await websocket.send_json({
-                        "prediction": prediction,
-                        "confidence": confidence,
-                        "total_hands": result["total_hands"],
-                        "detections": result["detections"],
-                        "success": True
+                        "status": "error",
+                        "error": "Invalid image data"
                     })
-                else:
+                    continue
+                
+                # Convert BGR to RGB for MediaPipe
+                image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                
+                # Process with MediaPipe
+                results = hands_detector.process(image_rgb)
+                
+                if not results.multi_hand_landmarks:
+                    # No hand detected
                     await websocket.send_json({
-                        "prediction": "No gesture detected",
-                        "confidence": 0.0,
-                        "total_hands": 0,
-                        "detections": [],
-                        "success": True
+                        "status": "no_hand_detected",
+                        "prediction": None,
+                        "confidence": 0.0
                     })
-                    
+                    continue
+                
+                # Extract features from first detected hand
+                hand_landmarks = results.multi_hand_landmarks[0]
+                features = extract_features_from_landmarks(hand_landmarks)
+                
+                # Make prediction with SVM model
+                prediction = svm_model.predict(features)[0]
+                
+                # Get confidence score
+                try:
+                    if hasattr(svm_model.named_steps['svc'], 'predict_proba'):
+                        probabilities = svm_model.predict_proba(features)[0]
+                        confidence = float(np.max(probabilities))
+                    else:
+                        decision_values = svm_model.decision_function(features)
+                        if decision_values.ndim > 1:
+                            confidence = float(np.max(np.abs(decision_values)))
+                        else:
+                            confidence = float(np.abs(decision_values[0]))
+                        confidence = min(1.0, confidence / 5.0)
+                except Exception:
+                    confidence = 0.8
+                
+                # Send prediction result
+                await websocket.send_json({
+                    "status": "success",
+                    "prediction": prediction,
+                    "confidence": confidence
+                })
+                
             except json.JSONDecodeError:
-                # Send error but keep connection alive
-                try:
-                    await websocket.send_json({
-                        "error": "Invalid JSON format",
-                        "success": False
-                    })
-                except Exception as send_error:
-                    print(f"Failed to send error message: {send_error}")
-                    break  # Connection closed, exit loop
+                await websocket.send_json({
+                    "status": "error",
+                    "error": "Invalid JSON format"
+                })
             except Exception as e:
-                # Send error but keep connection alive
-                print(f"Error processing frame: {e}")
-                try:
-                    await websocket.send_json({
-                        "error": str(e),
-                        "success": False
-                    })
-                except Exception as send_error:
-                    print(f"Failed to send error message: {send_error}")
-                    break  # Connection closed, exit loop
-                
+                await websocket.send_json({
+                    "status": "error",
+                    "error": f"Processing error: {str(e)}"
+                })
+    
     except WebSocketDisconnect:
-        print("WebSocket client disconnected gracefully")
+        print("WebSocket client disconnected")
     except Exception as e:
-        print(f"WebSocket connection error: {e}")
+        print(f"WebSocket error: {str(e)}")
+    finally:
+        print("WebSocket connection closed")
