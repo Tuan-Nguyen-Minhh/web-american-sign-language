@@ -1,81 +1,75 @@
 # Web American Sign Language
 
-## Cài đặt
+## Settings
 #### 1. Clone repo:
 ```bash
 git clone https://github.com/Tuan-Nguyen-Minhh/web-american-sign-language.git
 ```
 
-#### 2. Cài đặt môi trường (trên Windows):
-Cài môi trường ảo
+#### 2. Environment setup (on Windows):
+Install a virtual environment
 
 ```bash
 python -m venv asl_env
 ```
 
-Kích hoạt môi trường ảo (cmd/vscode)
+Activate the virtual environment (cmd/VS Code)
 ```bash
 asl_env\Scripts\activate
 ```
 
-Tải các libraries cần thiết
+Install the required libraries
 ```bash
 pip install -r requirements.txt
 ```
 
-#### 3. Cài đặt Postgresql và Đăng ký tài khoản (nhớ username & password của Postgresql)
-- Truy cập : https://www.enterprisedb.com/downloads/postgres-postgresql-downloads
-- AE có thể tải PostgreSQL Version 16.10 cho đồng bộ với nhau (hoặc tùy chọn)
+#### 3. Install PostgreSQL and register an account (remember the PostgreSQL username & password)
+- Visit: https://www.enterprisedb.com/downloads/postgres-postgresql-downloads
+- After installation, open pgAdmin 4, log in, and create a new database named `asl_db`
 
-- Sau khi cài đặt xong, thì vào pgadmin 4, đăng nhập và tạo database mới tên là : asl_db
-
-#### 4. Set up file environtment
-Tạo file .env bên trong folder backend với nội dung 
+#### 4. Set up file environment
+Create .env file inside folder backend:
 ```bash
 # JWT configuration
-SECRET_KEY=09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7
-ALGORITHM=HS256
+SECRET_KEY=YOUR_KEY
+ALGORITHM=YOUR_ALGORITHM
 
 # Postgresql url
-DATABASE_URL=postgresql://user-name:pass-word@localhost:port/asl_db
+DATABASE_URL=postgresql://user_name:pass_word@localhost:port/asl_db
 ```
 
-**`Lưu ý`**
-- user-name : là tài khoản postgresql của mọi người
-- pass-word : là mật khẩu postgresql của mọi người
-- port : port của postgresql
-- SECRET_KEY và ALGORITHM giữ nguyên, sau này khi thống nhất host chung một postgresql rồi thì mình tạo SECRET_KEY khác cho bảo mật sau.
+**`Note`**
+- user_name : your PostgreSQL account username
+- pass_word : your PostgreSQL account password
+- port : the PostgreSQL port number
 
-#### 5. Lệnh chạy
-Mở 2 terminal cmd
+#### 5. Download Detection model (ONNX) and SVM model (.joblib)
+Access [__link__](https://drive.google.com/drive/folders/1VW3WpQZ2_U1GL5imO4qwd2ejglzpvFiE?usp=sharing) and download model
+- Put Detection model (best.onnx) in /frontend/public/models/
+- Put SVM model (svm_asl_model.joblib) in /backend/detection/
+
+#### 6. Run the Web
+Open 2 Cmd terminals
 **`Terminal 1`**
-- Kích hoạt môi trường ảo
+- Activate the virtual environment
 ```bash
 asl_env\Scripts\activate
 ```
-- Convert model to ONNX format
-```bash
-python convert_model_to_onnx.py
-```
-- Copy model to frontend (Windows PowerShell/CMD)
-```bash
-copy backend\detection\yolov8.onnx frontend\public\models\
-```
-- Chạy backend
+- Run backend
 ```bash
 uvicorn backend.main:app --reload
 ```
 
 **`Terminal 2`**
-- Vào folder frontend
+- Go inside folder frontend
 ```bash
 cd frontend
 ```
 ```bash
 npm install
 ```
-- Chạy frontend
+- Run frontend
 ```bash
 npm run dev
 ```
-Mở port từ terminal 2 này lên và nhận thành quả ^^
+Open `http://localhost:5173/` from Terminal 2 and enjoy the result ^^
