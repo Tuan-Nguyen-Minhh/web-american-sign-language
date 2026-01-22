@@ -457,9 +457,6 @@ const LiveDetectionInterface = () => {
     
     if (!isDetecting) {
       setTranslatedText("Start Detecting");
-      setDetectionLog([]);
-      setAccumulatedText(""); // Reset accumulated text
-      lastPredictionRef.current = ""; // Reset last prediction
       currentPredictionRef.current = ""; // Reset current prediction
       predictionStartTimeRef.current = null; // Reset timer
       speakButtonAction("Starting detection");
