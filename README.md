@@ -74,4 +74,4 @@ npm install
 ```bash
 npm run dev
 ```
-Open `http://localhost:5173/` from Terminal 2 and enjoy the result ^^
+Open `http://localhost:5173/` from Terminal 2 and enjoy the result ^_^
