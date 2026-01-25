@@ -25,7 +25,7 @@ router = APIRouter(
 )
 
 # Load SVM model
-model_path = Path(__file__).parent.parent / "detection" / "svm_asl_model.joblib"
+model_path = Path(__file__).parent.parent / "detection" / "svm.joblib"
 svm_model = joblib.load(model_path)
 
 # Initialize MediaPipe Hands if available
@@ -49,25 +49,30 @@ async def detection_health_check():
         "model_classes": svm_model.classes_.tolist()
     })
 
-def extract_features_from_landmarks(hand_landmarks) -> np.ndarray:
-    landmarks = hand_landmarks.landmark
-    
-    # Extract all keypoints as numpy array (21 landmarks, 2 coordinates)
-    keypoints = np.array([[lm.x, lm.y] for lm in landmarks], dtype=np.float32)
-    
-    # Step 1: Make relative to wrist (landmark 0)
+def normalize_landmarks_xy(hand_landmarks, flip: bool = False) -> np.ndarray:
+    """
+    Preprocess landmarks to match training pipeline:
+      - x flip: x := 1-x if flip
+      - center at wrist (landmark 0)
+      - scale by max L2 distance from wrist
+      - flatten to shape (42,)
+    """
+    data = []
+    for lm in hand_landmarks.landmark:
+        x = (1.0 - lm.x) if flip else lm.x
+        data.append([x, lm.y])
+
+    keypoints = np.asarray(data, dtype=np.float32)  # (21, 2)
     wrist = keypoints[0].copy()
-    coords = keypoints - wrist
-    
-    # Step 2: Scale by maximum distance from wrist
-    dists = np.linalg.norm(coords, axis=1)
-    scale = dists.max()
+    coords = keypoints - wrist  # translation invariance
+
+    dists = np.linalg.norm(coords, axis=1)  # (21,)
+    scale = float(dists.max())
     if scale < 1e-6:
         scale = 1.0
-    coords = coords / scale
-    
-    # Flatten to 1D array (42 features)
-    return coords.reshape(1, -1)
+    coords = coords / scale  # scale invariance
+
+    return coords.reshape(-1).astype(np.float32)  # (42,)
 
 # Process frame with MediaPipe, extract landmarks, and predict ASL letter using SVM model
 @router.post("/predict-asl")
@@ -104,14 +109,17 @@ async def predict_asl_letter(file: UploadFile = File(...)):
         
         # Extract features from first detected hand
         hand_landmarks = results.multi_hand_landmarks[0]
-        features = extract_features_from_landmarks(hand_landmarks)
+        features = normalize_landmarks_xy(hand_landmarks, flip=False).reshape(1, -1)  # (1, 42)
         
         # Make prediction with SVM model
         prediction = svm_model.predict(features)[0]
         
         # Get prediction probabilities (confidence scores)
         try:
-            if hasattr(svm_model.named_steps['svc'], 'predict_proba'):
+            if hasattr(svm_model, 'predict_proba'):
+                probabilities = svm_model.predict_proba(features)[0]
+                confidence = float(np.max(probabilities))
+            elif hasattr(svm_model, 'named_steps') and hasattr(svm_model.named_steps.get('svc', None), 'predict_proba'):
                 probabilities = svm_model.predict_proba(features)[0]
                 confidence = float(np.max(probabilities))
             else:
@@ -195,14 +203,17 @@ async def websocket_detection_endpoint(websocket: WebSocket):
                 
                 # Extract features from first detected hand
                 hand_landmarks = results.multi_hand_landmarks[0]
-                features = extract_features_from_landmarks(hand_landmarks)
+                features = normalize_landmarks_xy(hand_landmarks, flip=False).reshape(1, -1)  # (1, 42)
                 
                 # Make prediction with SVM model
                 prediction = svm_model.predict(features)[0]
                 
                 # Get confidence score
                 try:
-                    if hasattr(svm_model.named_steps['svc'], 'predict_proba'):
+                    if hasattr(svm_model, 'predict_proba'):
+                        probabilities = svm_model.predict_proba(features)[0]
+                        confidence = float(np.max(probabilities))
+                    elif hasattr(svm_model, 'named_steps') and hasattr(svm_model.named_steps.get('svc', None), 'predict_proba'):
                         probabilities = svm_model.predict_proba(features)[0]
                         confidence = float(np.max(probabilities))
                     else:
