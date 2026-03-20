@@ -75,3 +75,11 @@ npm install
 npm run dev
 ```
 Open `http://localhost:5173/` from Terminal 2 and enjoy the result ^_^
+
+### Team members
+- [Nguyen Tuan Dung](https://github.com/tuandung1625)
+- [Nguyen Quang Minh](https://github.com/quangminh141005)
+- [Nguyen Minh Tuan](https://github.com/Tuan-Nguyen-Minhh)
+- [Trinh Nhat Huy](https://github.com/TrinhNhatHuy)
+- [Hoang Quang Minh](https://github.com/HoangQuangMinh23BI14281)
+- [Le Huy Hoang](https://github.com/Huyhoang181usth)
