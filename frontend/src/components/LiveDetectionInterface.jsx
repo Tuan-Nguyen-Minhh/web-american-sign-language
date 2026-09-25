@@ -501,6 +501,9 @@ const LiveDetectionInterface = () => {
         return;
       }
       setIsCameraOn(true);
+      setIsDetecting(true); // Auto-start detection immediately when camera turns on!
+      currentPredictionRef.current = "";
+      predictionStartTimeRef.current = null;
       setTranslatedText("Ready to detect");
       speakButtonAction("Camera turned on");
     }
@@ -669,7 +672,7 @@ const LiveDetectionInterface = () => {
                 color: "white",
               }}
             >
-              {isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
+              {isCameraOn ? "Turn Off Camera" : "Turn On Camera & Detect"}
             </button>
 
             {isCameraOn && (
