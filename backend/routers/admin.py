@@ -53,9 +53,12 @@ def delete_user(
             detail="You cannot delete your own account"
         )
     
+    # Delete related detection histories first
+    user_name = user.name  # Cache before delete — SQLAlchemy expires attrs after commit
+    db.query(models.DetectionHistory).filter(models.DetectionHistory.user_id == user_id).delete()
     db.delete(user)
     db.commit()
-    return {"message": f"User {user.name} deleted successfully"}
+    return {"message": f"User {user_name} deleted successfully"}
 
 # Update user role (Admin only)
 @router.patch('/users/{user_id}/role')
@@ -120,7 +123,8 @@ def get_user_detection_history(
             session_name=history.session_name,
             total_detections=history.total_detections,
             created_at=history.created_at.isoformat(),
-            detections=[schemas.DetectionItem(**det) for det in json.loads(history.detections_data)]
+            detections=[schemas.DetectionItem(**det) for det in json.loads(history.detections_data)],
+            detected_text=history.detected_text
         ))
     
     return result

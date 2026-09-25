@@ -136,7 +136,8 @@ async def get_detection_history_by_id(
             session_name=history.session_name,
             total_detections=history.total_detections,
             created_at=history.created_at.isoformat(),
-            detections=[schemas.DetectionItem(**det) for det in json.loads(history.detections_data)]
+            detections=[schemas.DetectionItem(**det) for det in json.loads(history.detections_data)],
+            detected_text=history.detected_text
         )
         
     except HTTPException:

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File, WebSocket, WebSocketDisconnect, Query
 from fastapi.responses import JSONResponse
 from .. import jwt_token, models, schemas
 import cv2
@@ -24,29 +24,44 @@ router = APIRouter(
     tags=['Hand Detection']
 )
 
-# Load SVM model
+# Load SVM model safely
 model_path = Path(__file__).parent.parent / "detection" / "svm.joblib"
-svm_model = joblib.load(model_path)
+svm_model = None
+if model_path.exists():
+    try:
+        svm_model = joblib.load(model_path)
+    except Exception as e:
+        print(f"Warning: Failed to load SVM model from {model_path}: {e}")
+else:
+    print(f"Warning: SVM model file not found at {model_path}")
 
 # Initialize MediaPipe Hands if available
 hands_detector = None
 if MEDIAPIPE_AVAILABLE:
-    hands_detector = mp_hands.Hands(
-        static_image_mode=True,
-        max_num_hands=1,
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5
-    )
+    try:
+        hands_detector = mp_hands.Hands(
+            static_image_mode=True,
+            max_num_hands=1,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        )
+    except Exception as e:
+        print(f"Warning: Failed to initialize MediaPipe Hands: {e}")
+        hands_detector = None
 
 # Health check endpoint
 @router.get("/health")
 async def detection_health_check():
+    classes = []
+    if svm_model is not None and hasattr(svm_model, 'classes_'):
+        classes = svm_model.classes_.tolist()
     return JSONResponse(content={
         "status": "ok",
-        "message": "Detection service running with SVM model",
+        "message": "Detection service running",
         "mode": "backend",
-        "mediapipe": "enabled" if MEDIAPIPE_AVAILABLE else "unavailable",
-        "model_classes": svm_model.classes_.tolist()
+        "mediapipe": "enabled" if (MEDIAPIPE_AVAILABLE and hands_detector is not None) else "unavailable",
+        "svm_model": "loaded" if svm_model is not None else "unavailable",
+        "model_classes": classes
     })
 
 def normalize_landmarks_xy(hand_landmarks, flip: bool = False) -> np.ndarray:
@@ -80,7 +95,12 @@ async def predict_asl_letter(file: UploadFile = File(...)):
     if not MEDIAPIPE_AVAILABLE or hands_detector is None:
         raise HTTPException(
             status_code=503,
-            detail="MediaPipe is not available. Please install: pip install mediapipe==0.9.0"
+            detail="MediaPipe is not available."
+        )
+    if svm_model is None:
+        raise HTTPException(
+            status_code=503,
+            detail="SVM model is not available. Please ensure svm.joblib is placed in backend/detection/"
         )
     
     try:
@@ -147,10 +167,21 @@ async def predict_asl_letter(file: UploadFile = File(...)):
 
 # WebSocket endpoint: Receives base64-encoded frames and returns predictions.
 @router.websocket("/ws")
-async def websocket_detection_endpoint(websocket: WebSocket):
+async def websocket_detection_endpoint(websocket: WebSocket, token: str | None = Query(default=None)):
     if not MEDIAPIPE_AVAILABLE or hands_detector is None:
         await websocket.close(code=1011, reason="MediaPipe not available")
         return
+    if svm_model is None:
+        await websocket.close(code=1011, reason="SVM model not loaded")
+        return
+    
+    # Authenticate via query parameter if provided
+    user_payload = None
+    if token:
+        user_payload = jwt_token.verify_access_token(token)
+        if not user_payload:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid or expired token")
+            return
     
     await websocket.accept()
     
@@ -162,6 +193,20 @@ async def websocket_detection_endpoint(websocket: WebSocket):
             try:
                 # Parse incoming message
                 message = json.loads(data)
+                
+                # If not authenticated via query param, verify token from message payload
+                if not user_payload:
+                    msg_token = message.get('token')
+                    if msg_token:
+                        user_payload = jwt_token.verify_access_token(msg_token)
+                    if not user_payload:
+                        await websocket.send_json({
+                            "status": "error",
+                            "error": "Authentication required. Invalid or missing token."
+                        })
+                        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Authentication required")
+                        break
+
                 base64_image = message.get('image', '')
                 
                 if not base64_image:

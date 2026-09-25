@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from .. import schemas, database, models, jwt_token as token
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 router = APIRouter(
     prefix="/api/auth",
@@ -98,8 +99,15 @@ def register(request: schemas.UserCreate, db: Session = Depends(database.get_db)
     )
     
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    try:
+        db.commit()
+        db.refresh(new_user)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Username or email is already registered'
+        )
     
     print(f"User created successfully: {new_user.name} (ID: {new_user.id})")  
     

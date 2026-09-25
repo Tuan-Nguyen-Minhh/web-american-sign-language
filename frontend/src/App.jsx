@@ -138,6 +138,15 @@ function AppContent() {
             }
           />
 
+          <Route
+            path="/profile"
+            element={
+              <AdminRestrictedRoute>
+                <Profile />
+              </AdminRestrictedRoute>
+            }
+          />
+
           {/* Catch-all route - redirect to home or login */}
           <Route
             path="*"
@@ -147,14 +156,6 @@ function AppContent() {
               ) : (
                 <Navigate to="/login" replace />
               )
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <AdminRestrictedRoute>
-                <Profile />
-              </AdminRestrictedRoute>
             }
           />
         </Routes>

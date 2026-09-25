@@ -17,9 +17,12 @@ yarn-error.log*
 # ML / Model files
 # ======================
 *.h5
-*.onnx
 *.pt
+# Ignore other models but keep deployed weights
+*.onnx
 *.joblib
+!frontend/public/models/best.onnx
+!backend/detection/svm.joblib
 # ======================
 # Environment variables
 # ======================

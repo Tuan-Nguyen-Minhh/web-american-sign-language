@@ -58,6 +58,7 @@ const DetectionLog = ({ log }) => (
 const LiveDetectionInterface = () => {
   const webcamRef = useRef(null);
   const canvasRef = useRef(null);
+  const offscreenCanvasRef = useRef(null);
   const [translatedText, setTranslatedText] = useState("Ready");
   const [confidence, setConfidence] = useState(0);
   const [lastDetectedText, setLastDetectedText] = useState(""); // Store last valid detection
@@ -324,11 +325,16 @@ const LiveDetectionInterface = () => {
         apiDetections[0].bbox = [x1, y1, x2, y2];
         setDetections(apiDetections);
         
-        // Create canvas with full frame
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        // Reuse offscreen canvas with full frame (avoid memory leak at 10 FPS)
+        if (!offscreenCanvasRef.current) {
+          offscreenCanvasRef.current = document.createElement('canvas');
+        }
+        const canvas = offscreenCanvasRef.current;
+        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+        }
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
         
         // Send to backend via WebSocket or HTTP

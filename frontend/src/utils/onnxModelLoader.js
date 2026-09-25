@@ -11,6 +11,8 @@ class YOLOModelLoader {
     this.modelPath = '/models/best.onnx'; // or best.onnx
     this.inputSize = 320; // Model input size (must match ONNX export)
     this.isLoaded = false;
+    this.letterboxCanvas = null;
+    this.letterboxCtx = null;
   }
 
   async loadModel(modelPath = null) {
@@ -47,8 +49,12 @@ class YOLOModelLoader {
   // Letterbox preprocessing - maintains aspect ratio with padding
 
   letterbox(image, newShape = 320) {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    if (!this.letterboxCanvas) {
+      this.letterboxCanvas = document.createElement('canvas');
+      this.letterboxCtx = this.letterboxCanvas.getContext('2d', { willReadFrequently: true });
+    }
+    const canvas = this.letterboxCanvas;
+    const ctx = this.letterboxCtx;
     
     // Get original dimensions
     const originalWidth = image.width || image.videoWidth;

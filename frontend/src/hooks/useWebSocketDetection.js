@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { authService } from '../services/authService';
-
-const WS_URL = 'ws://127.0.0.1:8000/api/detection/ws';
+import { getWebSocketUrl } from '../config/api';
 
 export const useWebSocketDetection = () => {
     const wsRef = useRef(null);
@@ -22,8 +21,10 @@ export const useWebSocketDetection = () => {
                 return;
             }
 
-            // Create WebSocket connection
-            wsRef.current = new WebSocket(WS_URL);
+            // Create WebSocket connection with authentication token
+            const baseWsUrl = getWebSocketUrl();
+            const connectionUrl = `${baseWsUrl}?token=${encodeURIComponent(token)}`;
+            wsRef.current = new WebSocket(connectionUrl);
 
             wsRef.current.onopen = () => {
                 console.log('WebSocket connected');

@@ -35,6 +35,18 @@ def create_refresh_token(data: dict):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+def verify_access_token(token: str) -> dict | None:
+    """Verify a JWT access token and return its payload, or None if invalid/expired."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") and payload.get("type") != "access":
+            return None
+        if not payload.get("sub"):
+            return None
+        return payload
+    except (InvalidTokenError, Exception):
+        return None
+
 def verify_refresh_token(token: str, db: Session):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

@@ -1,3 +1,6 @@
+from contextlib import asynccontextmanager
+import os
+import logging
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -7,22 +10,37 @@ from .database import engine, init_database
 from .routers import users, authentication, detection, detection_history, admin
 from .config import static_dir, assets_dir
 
+logger = logging.getLogger("asl_app")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize database and seed admin on startup
+    try:
+        init_database()
+        print("Database initialized successfully.")
+    except Exception as e:
+        print(f"Warning: Database initialization failed on startup: {e}")
+    yield
+
 app = FastAPI(
     title="ASL Web Application",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
-# CORS configuration
+# CORS configuration (supports env var for deployment)
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+if not allowed_origins:
+    allowed_origins = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
 )
-
-# Initialize database and create default admin
-init_database()
 
 # Include routers with /api prefix
 app.include_router(authentication.router)
