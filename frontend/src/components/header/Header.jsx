@@ -106,23 +106,22 @@ export default function Header({ isDarkMode, toggleTheme }) {
               <ToggleSwitch checked={isDarkMode} onChange={toggleTheme} />
             </li>
 
-            {isAuthenticated ? (
+            {isAuthenticated && !authService.isGuest() ? (
               <>
-                {!authService.isGuest() && (
-                  <li className="nav-item">
-                    <TbLogout
-                      onClick={handleLogout}
-                      style={{
-                        cursor: "pointer",
-                        color: "var(--primary-color)",
-                      }}
-                    />
-                  </li>
-                )}
+                <li className="nav-item">
+                  <TbLogout
+                    onClick={handleLogout}
+                    title="Logout"
+                    style={{
+                      cursor: "pointer",
+                      color: "var(--primary-color)",
+                    }}
+                  />
+                </li>
                 {/* Hide Profile icon for admins */}
                 {!isAdmin(currentUser) && (
                   <li className="nav-item">
-                    <Link to="/profile" className="nav-link">
+                    <Link to="/profile" className="nav-link" title="Profile">
                       <FontAwesomeIcon icon={faUser} />
                     </Link>
                   </li>

@@ -28,16 +28,27 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-// Route component that blocks admins from accessing user pages
-function AdminRestrictedRoute({ children }) {
+// Route component that blocks admins from accessing user/public pages
+function NonAdminRoute({ children }) {
+  const currentUser = authService.getUser();
+
+  // Redirect admins to admin dashboard
+  if (isAdmin(currentUser)) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  return children;
+}
+
+// Route component that requires a registered user (not guest, not admin)
+function ProfileRoute({ children }) {
   const isAuthenticated = authService.isAuthenticated();
   const currentUser = authService.getUser();
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || authService.isGuest()) {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect admins to admin dashboard
   if (isAdmin(currentUser)) {
     return <Navigate to="/admin" replace />;
   }
@@ -54,18 +65,27 @@ function AppContent() {
     return savedTheme === "dark";
   });
 
-  // Check token validity on app mount
+  // Check token validity or initialize guest session on app mount
   useEffect(() => {
     const checkAuth = async () => {
-      // Skip check if on login page
       if (isLoginPage) return;
-      
+
       const token = authService.getToken();
-      if (token) {
-        // Verify token with backend
+      if (!token) {
+        // Automatically establish a guest session so camera & websocket work immediately!
+        try {
+          await authService.guestLogin();
+        } catch (err) {
+          console.warn("Could not auto-login as guest:", err);
+        }
+      } else {
+        // Verify existing token with backend
         const isValid = await authService.verifyToken();
         if (!isValid) {
-          console.log('Token expired or invalid, redirecting to login...');
+          console.log("Token expired or invalid, reverting to guest session...");
+          try {
+            await authService.guestLogin();
+          } catch (err) {}
         }
       }
     };
@@ -93,7 +113,6 @@ function AppContent() {
   return (
     <div className="App">
       {/* Only show Header if NOT on login page */}
-      {/* [CẬP NHẬT]: Truyền props isDarkMode và toggleTheme cho Header */}
       {!isLoginPage && (
         <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
       )}
@@ -103,25 +122,25 @@ function AppContent() {
           <Route
             path="/"
             element={
-              <AdminRestrictedRoute>
+              <NonAdminRoute>
                 <Home />
-              </AdminRestrictedRoute>
+              </NonAdminRoute>
             }
           />
           <Route
             path="/about"
             element={
-              <AdminRestrictedRoute>
+              <NonAdminRoute>
                 <About />
-              </AdminRestrictedRoute>
+              </NonAdminRoute>
             }
           />
           <Route
             path="/contribute"
             element={
-              <AdminRestrictedRoute>
+              <NonAdminRoute>
                 <Contribute />
-              </AdminRestrictedRoute>
+              </NonAdminRoute>
             }
           />
 
@@ -141,22 +160,16 @@ function AppContent() {
           <Route
             path="/profile"
             element={
-              <AdminRestrictedRoute>
+              <ProfileRoute>
                 <Profile />
-              </AdminRestrictedRoute>
+              </ProfileRoute>
             }
           />
 
-          {/* Catch-all route - redirect to home or login */}
+          {/* Catch-all route - redirect to home */}
           <Route
             path="*"
-            element={
-              authService.isAuthenticated() ? (
-                <Navigate to="/" replace />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
+            element={<Navigate to="/" replace />}
           />
         </Routes>
       </main>
