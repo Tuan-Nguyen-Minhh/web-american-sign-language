@@ -49,19 +49,29 @@ app.include_router(detection.router)
 app.include_router(detection_history.router)
 app.include_router(admin.router)
 
-# FOR PRODUCTION
-if assets_dir.exists():
-    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
-
-# Serve index.html for all non-API routes
-@app.get("/{full_path:path}")
-async def serve_react(full_path: str):
-    file_path = static_dir / full_path
-    if file_path.is_file():
-        return FileResponse(file_path)
-    return FileResponse(static_dir / "index.html")
-
 # Health check
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "version": "1.0.0"}
+
+# FOR PRODUCTION (Only if frontend/dist exists)
+if (static_dir / "index.html").exists():
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    # Serve index.html for all non-API routes
+    @app.get("/{full_path:path}")
+    async def serve_react(full_path: str):
+        file_path = static_dir / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(static_dir / "index.html")
+else:
+    @app.get("/")
+    async def root():
+        return {
+            "status": "online",
+            "message": "ASL Backend API is running successfully on Render!",
+            "docs": "/docs",
+            "health": "/api/health"
+        }
